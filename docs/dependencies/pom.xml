@@ -10,7 +10,7 @@ all modules and does not describe the project structure per-subproject.
  -->
 <groupId>io.spine.gcloud</groupId>
 <artifactId>gcloud-jvm</artifactId>
-<version>2.0.0-SNAPSHOT.214</version>
+<version>2.0.0-SNAPSHOT.220</version>
 
 <inceptionYear>2015</inceptionYear>
 
@@ -38,37 +38,37 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-base</artifactId>
-    <version>2.0.0-SNAPSHOT.421</version>
+    <version>2.0.0-SNAPSHOT.426</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-base-types</artifactId>
-    <version>2.0.0-SNAPSHOT.223</version>
+    <version>2.0.0-SNAPSHOT.224</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-logging</artifactId>
-    <version>2.0.0-SNAPSHOT.417</version>
+    <version>2.0.0-SNAPSHOT.423</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-server</artifactId>
-    <version>2.0.0-SNAPSHOT.381</version>
+    <version>2.0.0-SNAPSHOT.522</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-time</artifactId>
-    <version>2.0.0-SNAPSHOT.242</version>
+    <version>2.0.0-SNAPSHOT.250</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>io.spine</groupId>
     <artifactId>spine-validation-jvm-runtime</artifactId>
-    <version>2.0.0-SNAPSHOT.446</version>
+    <version>2.0.0-SNAPSHOT.462</version>
     <scope>compile</scope>
   </dependency>
   <dependency>
@@ -134,7 +134,7 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>io.spine.tools</groupId>
     <artifactId>server-testlib</artifactId>
-    <version>2.0.0-SNAPSHOT.381</version>
+    <version>2.0.0-SNAPSHOT.522</version>
     <scope>test</scope>
   </dependency>
   <dependency>
@@ -146,6 +146,7 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>org.junit.platform</groupId>
     <artifactId>junit-platform-launcher</artifactId>
+    <version>6.1.0</version>
     <scope>test</scope>
   </dependency>
   <dependency>
@@ -162,7 +163,7 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>com.google.errorprone</groupId>
     <artifactId>error_prone_core</artifactId>
-    <version>2.36.0</version>
+    <version>2.42.0</version>
   </dependency>
   <dependency>
     <groupId>com.google.protobuf</groupId>
@@ -182,17 +183,17 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>io.spine.tools</groupId>
     <artifactId>compiler-cli-all</artifactId>
-    <version>2.0.0-SNAPSHOT.054</version>
+    <version>2.0.0-SNAPSHOT.065</version>
   </dependency>
   <dependency>
     <groupId>io.spine.tools</groupId>
     <artifactId>compiler-protoc-plugin</artifactId>
-    <version>2.0.0-SNAPSHOT.054</version>
+    <version>2.0.0-SNAPSHOT.065</version>
   </dependency>
   <dependency>
     <groupId>io.spine.tools</groupId>
     <artifactId>core-jvm-plugins</artifactId>
-    <version>2.0.0-SNAPSHOT.080</version>
+    <version>2.0.0-SNAPSHOT.081</version>
   </dependency>
   <dependency>
     <groupId>io.spine.tools</groupId>
@@ -202,12 +203,12 @@ all modules and does not describe the project structure per-subproject.
   <dependency>
     <groupId>io.spine.tools</groupId>
     <artifactId>time-validation</artifactId>
-    <version>2.0.0-SNAPSHOT.242</version>
+    <version>2.0.0-SNAPSHOT.250</version>
   </dependency>
   <dependency>
     <groupId>io.spine.tools</groupId>
     <artifactId>validation-java-bundle</artifactId>
-    <version>2.0.0-SNAPSHOT.446</version>
+    <version>2.0.0-SNAPSHOT.462</version>
   </dependency>
   <dependency>
     <groupId>net.sourceforge.pmd</groupId>
