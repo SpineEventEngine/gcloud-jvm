@@ -133,6 +133,8 @@ public final class RecordLayouts
      */
     public <I, R extends Message> RecordLayout<I, R> find(Class<R> recordType,
                                                           StorageGroup group) {
+        checkNotNull(recordType);
+        checkNotNull(group);
         var raw = groupedValues.get(new GroupedStorage(group.getName(), recordType));
         if (raw == null) {
             return new FlatLayout<>(Kind.of(recordType, group));
