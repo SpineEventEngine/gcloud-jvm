@@ -47,7 +47,6 @@ import io.spine.server.storage.datastore.query.DsLookup;
 import io.spine.server.storage.datastore.query.FilterAdapter;
 import io.spine.server.storage.datastore.query.PreparedQuery;
 import io.spine.type.TypeUrl;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Iterator;
 import java.util.Optional;
@@ -136,7 +135,7 @@ public class DsRecordStorage<I, R extends Message> extends RecordStorage<I, R> {
         checkNotNull(records);
 
         ImmutableList.Builder<Entity> entitiesToWrite = ImmutableList.builder();
-        for (RecordWithColumns<I, R> record : records) {
+        for (var record : records) {
             var entity = entityRecordToEntity(record);
             entitiesToWrite.add(entity);
         }
@@ -150,7 +149,6 @@ public class DsRecordStorage<I, R extends Message> extends RecordStorage<I, R> {
         return result.iterator();
     }
 
-    @NonNull
     private PreparedQuery<I, R> lookupWith(RecordQuery<I, R> query) {
         return DsLookup.onTopOf(datastore, columnFilterAdapter, dsSpec)
                        .with(query);
