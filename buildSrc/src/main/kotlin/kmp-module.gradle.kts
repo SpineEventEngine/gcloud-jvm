@@ -25,6 +25,7 @@
  */
 
 import io.spine.dependency.boms.BomsPlugin
+import io.spine.dependency.isDokka
 import io.spine.dependency.lib.Jackson
 import io.spine.dependency.lib.Kotlin
 import io.spine.dependency.local.Reflect
@@ -37,6 +38,7 @@ import io.spine.gradle.javac.configureJavac
 import io.spine.gradle.kotlin.setFreeCompilerArgs
 import io.spine.gradle.publish.IncrementGuard
 import io.spine.gradle.report.license.LicenseReporter
+import io.spine.gradle.testing.configureLogging
 
 /**
  * Configures this [Project] as a Kotlin Multiplatform module.
@@ -83,6 +85,9 @@ fun Project.forceConfigurations() {
     with(configurations) {
         forceVersions()
         all {
+            if (isDokka) {
+                return@all
+            }
             resolutionStrategy {
                 val cfg = this@all
                 val rs = this@resolutionStrategy
@@ -102,9 +107,8 @@ fun Project.forceConfigurations() {
  *
  * Please note, this extension DOES NOT configure Kotlin for JVM.
  * It configures KMP, in which Kotlin for JVM is only one of
- * possible targets.
+ * the possible targets.
  */
-@Suppress("UNUSED_VARIABLE") // Avoid warnings for source set vars.
 kotlin {
     // Enables explicit API mode for any Kotlin sources within the module.
     explicitApi()
@@ -122,9 +126,8 @@ kotlin {
 
     // Dependencies are specified per-target.
     // Please note, common sources are implicitly available in all targets.
-    @Suppress("unused") // source set `val`s are used implicitly.
     sourceSets {
-        val commonTest by getting {
+        getByName("commonTest") {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
@@ -132,7 +135,7 @@ kotlin {
                 implementation(Kotest.frameworkEngine)
             }
         }
-        val jvmTest by getting {
+        getByName("jvmTest") {
             dependencies {
                 implementation(dependencies.enforcedPlatform(JUnit.bom))
                 implementation(TestLib.lib)
@@ -158,17 +161,28 @@ java {
  *
  * Also, Kotlin and Java share the same test executor (JUnit), so tests
  * configuration is for both.
+ *
+ * The `jvmTest` task mirrors the setup made by `module-testing` for
+ * the `test` task of a `jvm-module` (`module-testing` itself cannot be
+ * applied here because it brings `java-library`, which conflicts with
+ * the Kotlin Multiplatform plugin). Unlike `module-testing`, no engine
+ * filter is imposed: `jvmTest` dependencies include the Kotest runner,
+ * which is a JUnit Platform engine of its own.
  */
 tasks {
     withType<JavaCompile>().configureEach {
         configureJavac()
+    }
+    named<Test>("jvmTest") {
+        useJUnitPlatform()
+        configureLogging()
     }
 }
 
 /**
  * Overrides the default location of Kotlin sources.
  *
- * The default configuration of Detekt assumes presence of Kotlin sources
+ * The default configuration of Detekt assumes the presence of Kotlin sources
  * in `src/main/kotlin`, which is not the case for KMP.
  */
 detekt {

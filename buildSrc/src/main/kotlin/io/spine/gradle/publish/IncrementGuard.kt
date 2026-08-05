@@ -30,7 +30,6 @@ package io.spine.gradle.publish
 
 import io.spine.gradle.Build
 import io.spine.gradle.SpineTaskGroup
-import io.spine.gradle.base.check
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -40,9 +39,10 @@ import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
  * Gradle plugin that adds a [CheckVersionIncrement] task verifying that the
  * project version was incremented before its artifacts are published.
  *
- * The task — named `checkVersionIncrement` — runs before the `check` task and
- * before any `publishToMavenLocal` task. It actually executes only when the
- * verification is meaningful; see [apply].
+ * The task — named `checkVersionIncrement` — is run directly by the `Version Guard`
+ * CI workflow and before any `publishToMavenLocal` task. It is deliberately kept out
+ * of the `check` lifecycle, and actually executes only when the verification is
+ * meaningful; see [apply].
  */
 class IncrementGuard : Plugin<Project> {
 
@@ -86,6 +86,25 @@ class IncrementGuard : Plugin<Project> {
         ): Boolean = ciPullRequest || (!onCi && localPublish)
 
         /**
+         * Tells whether [CheckVersionIncrement] should compare the project version against
+         * the base branch.
+         *
+         * The comparison reads `origin/<base>:version.gradle.kts`, so it needs the base
+         * branch to have been fetched. Only the dedicated `Version Guard` workflow fetches it
+         * and sets the `VERSION_GUARD` environment variable, which [CheckVersionIncrement]
+         * passes here as the [underVersionGuard] flag; the workflow runs for pull requests, so
+         * a non-blank [baseRef] is required as well.
+         *
+         * Every other CI build (e.g. the Ubuntu and Windows builds) pulls the check into the
+         * task graph through `publishToMavenLocal` but runs a shallow checkout without the
+         * base ref. Such builds report `underVersionGuard = false`, so the comparison is
+         * skipped and `checkNotPublished` stays the guard — otherwise the comparison would
+         * fail closed on `origin/<base>` and break every pull request.
+         */
+        internal fun shouldCompareToBase(underVersionGuard: Boolean, baseRef: String?): Boolean =
+            underVersionGuard && !baseRef.isNullOrBlank()
+
+        /**
          * Tells whether [tasks] contains a Maven Local publishing task that
          * belongs to the given [project].
          *
@@ -98,14 +117,21 @@ class IncrementGuard : Plugin<Project> {
     }
 
     /**
-     * Adds the [CheckVersionIncrement] task to the [target] project and wires it
-     * into two execution paths:
+     * Adds the [CheckVersionIncrement] task to the [target] project and makes every
+     * `publishToMavenLocal` task depend on it, so that a local publish — used by
+     * integration tests that consume artifacts from `~/.m2` — cannot overwrite an
+     * already published version.
      *
-     *  1. The `check` task depends on it, so that CI pull requests verify
-     *     the increment.
-     *  2. Every `publishToMavenLocal` task depends on it, so that a local publish —
-     *     used by integration tests that consume artifacts from `~/.m2` — cannot
-     *     overwrite an already published version.
+     * The CI pull-request increment check is driven separately by the `Version Guard`
+     * workflow (`increment-guard.yml`), which invokes `checkVersionIncrement` by name after
+     * fetching the base branch and setting `VERSION_GUARD` — the signal that gates
+     * [CheckVersionIncrement]'s strict base-branch comparison (see [shouldCompareToBase]).
+     * The task is intentionally not wired into the `check` lifecycle: the version check
+     * belongs to the publishing path, not to generic `check` runs. A build that still pulls
+     * the task in through `publishToMavenLocal` (e.g. the Ubuntu/Windows CI builds, which
+     * publish locally to feed integration tests) stays green, because the base comparison —
+     * which reads `origin/<base>` and would otherwise fail closed on a shallow checkout — is
+     * skipped outside the `Version Guard` workflow.
      *
      * The task is always created and wired, but its action runs only when:
      *  1. the build is a GitHub Actions pull request targeting a default
@@ -134,12 +160,15 @@ class IncrementGuard : Plugin<Project> {
             }
         }
 
-        // Verify the increment on CI pull requests via the `check` lifecycle task.
-        tasks.check.configure { dependsOn(checkVersion) }
+        // The CI pull-request increment check is run by the `Version Guard` workflow,
+        // which calls `checkVersionIncrement` directly after fetching the base branch.
+        // It is intentionally not a dependency of `check`: that would run it in every
+        // `./gradlew build` (e.g. the Ubuntu/Windows CI builds), where `origin/<base>`
+        // is not fetched and the fail-closed base comparison would break the build.
 
-        // Verify it before publishing to Maven Local too: integration tests in this
-        // and sibling projects consume the freshly published artifacts from `~/.m2`,
-        // so a non-incremented version would let them pick up a stale artifact.
+        // Verify before publishing to Maven Local: integration tests in this and
+        // sibling projects consume the freshly published artifacts from `~/.m2`, so a
+        // non-incremented version would let them pick up a stale artifact.
         tasks.withType(PublishToMavenLocal::class.java).configureEach {
             dependsOn(checkVersion)
         }
