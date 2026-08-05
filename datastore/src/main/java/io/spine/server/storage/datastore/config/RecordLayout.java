@@ -1,11 +1,11 @@
 /*
- * Copyright 2023, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -37,6 +37,8 @@ import io.spine.server.storage.datastore.record.RecordId;
 
 import java.util.Optional;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Describes the layout of Datastore Entities in which the {@link Message} records of certain
  * type are stored.
@@ -63,7 +65,18 @@ public abstract class RecordLayout<I, R extends Message> {
      * Creates the layout for the records of the given type.
      */
     protected RecordLayout(Class<? extends Message> domainType) {
-        this.kind = Kind.of(domainType);
+        this(Kind.of(domainType));
+    }
+
+    /**
+     * Creates the layout with the given Datastore Entity {@code Kind}.
+     *
+     * <p>Serves the storages whose kind is not derived from the record type alone —
+     * such as the per-entity histories, whose kind also carries their
+     * {@linkplain io.spine.server.storage.StorageGroup storage group}.
+     */
+    protected RecordLayout(Kind kind) {
+        this.kind = checkNotNull(kind);
     }
 
     /**

@@ -24,61 +24,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.server.storage.datastore.config;
+package io.spine.server.storage.datastore.record.given;
 
-import com.google.cloud.datastore.Key;
-import com.google.cloud.datastore.StructuredQuery;
-import com.google.protobuf.Message;
+import io.spine.core.Event;
+import io.spine.core.EventId;
 import io.spine.query.RecordQuery;
-import io.spine.server.storage.datastore.DatastoreMedium;
 import io.spine.server.storage.datastore.Kind;
+import io.spine.server.storage.datastore.config.EntityGroupLayout;
 import io.spine.server.storage.datastore.record.RecordId;
-
-import java.util.Optional;
+import io.spine.test.storage.StgProject;
 
 /**
- * Describes the type of storage layout, in which the records are stored in a flat structure.
+ * An ancestor-child layout for the event journal of the {@link StgProject} entities,
+ * exercising the {@code Kind}-accepting constructor of {@link EntityGroupLayout}:
+ * the journaled events are stored as children of a project record.
  *
- * @param <I>
- *         the type of the identifiers of the stored records
- * @param <R>
- *         the type of the stored records
+ * <p>The ancestor is fixed to {@link #PARENT_RECORD_ID} — enough for the tests
+ * observing the produced keys.
  */
-public final class FlatLayout<I, R extends Message> extends RecordLayout<I, R> {
+public final class ProjectChildJournalLayout
+        extends EntityGroupLayout<EventId, Event, StgProject> {
 
-    /**
-     * Creates a new flat layout for the stored records of passed type.
-     */
-    public FlatLayout(Class<? extends Message> domainType) {
-        super(domainType);
-    }
+    public static final String KIND = "grouped_project_journal";
+    public static final String PARENT_RECORD_ID = "the-parent-project";
 
-    /**
-     * Creates a new flat layout storing the records under the given
-     * Datastore Entity {@code Kind}.
-     */
-    public FlatLayout(Kind kind) {
-        super(kind);
+    public ProjectChildJournalLayout() {
+        super(Kind.of(KIND), StgProject.class);
     }
 
     @Override
-    protected RecordId asRecordId(I id) {
+    protected RecordId asRecordId(EventId id) {
         return RecordId.ofEntityId(id);
     }
 
     @Override
-    public Key keyOf(I id, DatastoreMedium datastore) {
-        var recordId = asRecordId(id);
-        return newKey(recordId, datastore);
+    protected RecordId toAncestorRecordId(EventId id) {
+        return RecordId.of(PARENT_RECORD_ID);
     }
 
-    /**
-     * Always returns {@code Optional.empty()}, since the layout of records
-     * has no ancestor-child hierarchy.
-     */
     @Override
-    public Optional<StructuredQuery.Filter> ancestorFilter(RecordQuery<I, R> query,
-                                                           DatastoreMedium datastore) {
-        return Optional.empty();
+    protected RecordId extractAncestorId(RecordQuery<EventId, Event> query) {
+        return RecordId.of(PARENT_RECORD_ID);
     }
 }

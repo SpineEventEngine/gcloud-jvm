@@ -1,11 +1,11 @@
 /*
- * Copyright 2023, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -35,7 +35,7 @@ import io.spine.server.storage.datastore.DatastoreStorageFactory;
 import io.spine.server.storage.datastore.DatastoreWrapper;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
@@ -48,7 +48,14 @@ import static java.lang.String.format;
  */
 public class TestDatastoreStorageFactory extends DatastoreStorageFactory {
 
-    private final Collection<DatastoreWrapper> allCreatedWrappers = new HashSet<>();
+    /**
+     * All the wrappers created by this factory.
+     *
+     * <p>Kept in a concurrent set: a storage — and so its wrapper — may be created
+     * lazily on a delivery worker thread;
+     * see {@code StorageFactory.createEntityStateHistoryStorage}.
+     */
+    private final Collection<DatastoreWrapper> allCreatedWrappers = ConcurrentHashMap.newKeySet();
 
     protected TestDatastoreStorageFactory(Datastore datastore) {
         super(newBuilderWithDefaults(datastore));

@@ -43,6 +43,7 @@ import io.spine.server.storage.RecordSpec;
 import io.spine.server.storage.RecordStorage;
 import io.spine.server.storage.Storage;
 import io.spine.server.storage.StorageFactory;
+import io.spine.server.storage.StorageGroup;
 import io.spine.server.storage.datastore.config.CreateEntityStorage;
 import io.spine.server.storage.datastore.config.CreateRecordStorage;
 import io.spine.server.storage.datastore.config.CustomStorages;
@@ -59,6 +60,7 @@ import io.spine.server.storage.datastore.tenant.NamespaceSupplier;
 import io.spine.server.storage.datastore.tenant.NamespaceConverterFactory;
 import io.spine.server.storage.datastore.tenant.PrefixedNamespaceConverterFactory;
 import io.spine.server.tenant.TenantIndex;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 
@@ -157,12 +159,34 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
         return builder;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>A storage belonging to a {@linkplain StorageGroup group} — a per-entity
+     * history — is allocated a distinct {@linkplain Kind kind} composed of the group
+     * name and the record type; see {@link Kind#of(Class, StorageGroup)}. A custom
+     * kind — or an ancestor-child structure — for a grouped storage is set via
+     * {@link Builder#organizeRecords(Class, Class, RecordLayout)}.
+     *
+     * <p>Single-type {@linkplain Builder#organizeRecords(Class, RecordLayout) record
+     * layouts} and {@linkplain Builder#useRecordStorage(Class, Class, CreateRecordStorage)
+     * custom storages} apply only to the storages outside any group: honoring either for
+     * a grouped storage would conflate it with the ungrouped storage holding records
+     * of the same type. The {@linkplain Builder#enableTransactions(Class) transactional
+     * behavior}, being keyed by the source type of the record specification, applies
+     * to grouped storages as well.
+     */
     @Override
     public <I, R extends Message> RecordStorage<I, R>
-    createRecordStorage(ContextSpec context, RecordSpec<I, R> spec) {
+    createRecordStorage(ContextSpec context,
+                        RecordSpec<I, R> spec,
+                        @Nullable StorageGroup group) {
         checkNotNull(context);
         checkNotNull(spec);
-        var config = configurationWith(context, spec);
+        var config = configurationWith(context, spec, group);
+        if (group != null) {
+            return new DsRecordStorage<>(config);
+        }
         var custom = customStorages.find(spec);
         var result =
                 custom.map(callback -> callback.apply(config))
@@ -171,11 +195,12 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
     }
 
     private <I, R extends Message>
-    StorageConfiguration<I, R> configurationWith(ContextSpec context, RecordSpec<I, R> spec) {
+    StorageConfiguration<I, R> configurationWith(ContextSpec context,
+                                                 RecordSpec<I, R> spec,
+                                                 @Nullable StorageGroup group) {
         var wrapper = wrapperFor(context);
-        var recordType = spec.sourceType();
-        var behavior = txSettings.find(recordType);
-        RecordLayout<I, R> layout = recordLayouts.find(recordType);
+        var behavior = txSettings.find(spec.sourceType());
+        var layout = layoutFor(spec, group);
         var dsSpec = new DsEntitySpec<>(spec, layout);
         var configuration = StorageConfiguration.<I, R>newBuilder()
                 .withDatastore(wrapper)
@@ -185,6 +210,26 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
                 .withRecordSpec(dsSpec)
                 .build();
         return configuration;
+    }
+
+    /**
+     * Chooses the Datastore Entity layout for the storage of the records described
+     * by the given specification.
+     *
+     * <p>An ungrouped storage takes the layout configured for the source type of
+     * the specification, defaulting to a flat one. A grouped storage takes the layout
+     * {@linkplain Builder#organizeRecords(Class, Class, RecordLayout) registered for
+     * the state and the record types of the storage}, defaulting to a flat layout
+     * under the {@linkplain Kind#of(Class, StorageGroup) grouped kind}. Single-type
+     * custom layouts never serve a grouped storage: keyed by the type alone,
+     * they would conflate the group members.
+     */
+    private <I, R extends Message> RecordLayout<I, R>
+    layoutFor(RecordSpec<I, R> spec, @Nullable StorageGroup group) {
+        if (group == null) {
+            return recordLayouts.find(spec.sourceType());
+        }
+        return recordLayouts.find(spec.recordType(), group);
     }
 
     /**
@@ -264,13 +309,14 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
      *
      * <p>If there were no {@code DatastoreWrapper} instances created for the given context,
      * creates it.
+     *
+     * <p>The method is safe for concurrent invocation: a storage may be created lazily
+     * on a delivery worker thread — see
+     * {@link StorageFactory#createEntityStateHistoryStorage(ContextSpec, Class)}.
      */
     final DatastoreWrapper wrapperFor(ContextSpec spec) {
-        if (!contextWrappers.containsKey(spec)) {
-            var wrapper = newDatastoreWrapper(spec.isMultitenant());
-            contextWrappers.put(spec, wrapper);
-        }
-        return contextWrappers.get(spec);
+        return contextWrappers.computeIfAbsent(
+                spec, (s) -> newDatastoreWrapper(s.isMultitenant()));
     }
 
     /**
@@ -511,6 +557,12 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
          * Specified the layout of Datastore Entities to use when operating with the records of
          * a particular type.
          *
+         * <p>The layout applies only to the storages belonging to no
+         * {@link StorageGroup StorageGroup}. A layout set for an entity state type
+         * organizes the latest-state storage alone, never the history storages of
+         * that entity; use {@link #organizeRecords(Class, Class, RecordLayout)}
+         * to organize the grouped storages.
+         *
          * @param recordType
          *         the type of stored records
          * @param layout
@@ -527,6 +579,61 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
             checkNotNull(recordType);
             checkNotNull(layout);
             layouts.add(recordType, layout);
+            return this;
+        }
+
+        /**
+         * Specifies the layout of Datastore Entities to use for the
+         * {@linkplain StorageGroup grouped} storage serving the entities with
+         * the specified state type — such as a per-entity history.
+         *
+         * <p>A grouped storage is addressed by the storage group — named by the framework
+         * after the entity state type — paired with the type of the stored records.
+         * For instance, for the entities with the {@code Project} state:
+         *
+         * <pre>
+         * // The event journal of the `Project` entities:
+         * builder.organizeRecords(Project.class, Event.class,
+         *                         new FlatLayout&lt;&gt;(Kind.of("project_journal")));
+         *
+         * // The state history of the `Project` entities:
+         * builder.organizeRecords(Project.class, EntityRecord.class,
+         *                         new FlatLayout&lt;&gt;(Kind.of("project_state_history")));
+         * </pre>
+         *
+         * <p>The layout previously set for the same grouped storage, if any,
+         * is replaced with this call.
+         *
+         * <p>In case no custom layout is defined, a grouped storage takes a flat layout
+         * under the kind {@linkplain Kind#of(Class, StorageGroup) composed of the group
+         * name and the record type}.
+         *
+         * <p>It is a responsibility of callers to select a kind that does not collide
+         * with the kinds of other storages, including the generated ones.
+         *
+         * @param stateType
+         *         the type of the state of the entity served by the grouped storage
+         * @param recordType
+         *         the type of the records stored by the grouped storage
+         * @param layout
+         *         the layout to use
+         * @param <S>
+         *         the type of the entity state
+         * @param <I>
+         *         the type of record identifiers
+         * @param <R>
+         *         the type of the stored records
+         * @return this instance of {@code Builder}
+         */
+        @CanIgnoreReturnValue
+        public <S extends EntityState<?>, I, R extends Message>
+        Builder organizeRecords(Class<S> stateType,
+                                Class<R> recordType,
+                                RecordLayout<I, R> layout) {
+            checkNotNull(stateType);
+            checkNotNull(recordType);
+            checkNotNull(layout);
+            layouts.add(stateType, recordType, layout);
             return this;
         }
 
