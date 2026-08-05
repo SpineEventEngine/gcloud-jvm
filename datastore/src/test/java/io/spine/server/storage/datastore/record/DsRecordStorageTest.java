@@ -1,11 +1,11 @@
 /*
- * Copyright 2023, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -28,7 +28,7 @@ package io.spine.server.storage.datastore.record;
 
 import io.spine.environment.Tests;
 import io.spine.server.ServerEnvironment;
-import io.spine.server.storage.RecordStorageDelegateTest;
+import io.spine.server.storage.DelegatingRecordStorageTest;
 import io.spine.server.storage.datastore.BigDataTester;
 import io.spine.server.storage.datastore.Kind;
 import io.spine.test.storage.StgProject;
@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DisplayName("`DsRecordStorage` should")
 @EmulatorTest
-final class DsRecordStorageTest extends RecordStorageDelegateTest {
+final class DsRecordStorageTest extends DelegatingRecordStorageTest {
 
     private static final TestDatastoreStorageFactory datastoreFactory =
             TestDatastoreStorageFactory.local();
