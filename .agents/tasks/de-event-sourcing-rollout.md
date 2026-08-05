@@ -42,8 +42,8 @@ Mechanical half:
 Substantive half:
 
 - Grouped kind naming follows the jdbc rule (generic rule over semantic
-  suffixes): grouped kind = group name + `_` + record type simple name,
-  e.g. `spine.test.storage.StgProject_Event`. Implemented as a new
+  suffixes): grouped kind = group name + `-` + record type simple name,
+  e.g. `spine.test.storage.StgProject-Event`. Implemented as a new
   `Kind.of(recordType, group)` factory method.
 - `DatastoreStorageFactory.configurationWith(...)` threads the group into
   the layout choice: grouped storages always take a `FlatLayout` with the
@@ -70,9 +70,13 @@ New Kotlin specs (Datastore emulator, mirroring jdbc's suite):
 
 ## Settled while implementing
 
-- Grouped kind naming: `Kind.of(recordType, group)` → group name + `_` +
-  record type simple name (`spine.test.storage.StgProject_Event`), following
-  the jdbc naming rule (product owner, 2026-08-04).
+- Grouped kind naming: `Kind.of(recordType, group)` → group name + `-` +
+  record type simple name (`spine.test.storage.StgProject-Event`), following
+  the jdbc "group + record type" rule (product owner, 2026-08-04). The joiner
+  is a dash — a character illegal in Protobuf type names — so a grouped kind
+  never collides with a type-name-derived ungrouped kind, even for sibling
+  types like `Order` and `Order_Event` (Codex review of PR #204; jdbc's `_`
+  joiner retains that ambiguity under SQL identifier constraints).
 - `RecordLayout`/`FlatLayout` gained `Kind`-accepting constructors, so a
   grouped storage can carry a kind not derived from a record type alone.
 - The two dead suites (`DsAggregateStorageTest`,

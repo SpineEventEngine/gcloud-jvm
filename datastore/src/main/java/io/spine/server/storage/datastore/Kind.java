@@ -109,14 +109,20 @@ public final class Kind extends StringTypeValue {
      * of the given {@linkplain StorageGroup storage group}.
      *
      * <p>The name is composed of the group name and the simple name of the record type,
-     * e.g. {@code spine.test.storage.StgProject_Event}. Such a kind tells a grouped
-     * storage — a per-entity history — apart from the ungrouped storage of records
-     * of the same type, and from the same-typed histories of other entity classes.
+     * joined with a dash: e.g. {@code spine.test.storage.StgProject-Event}. Such a kind
+     * tells a grouped storage — a per-entity history — apart from the ungrouped storage
+     * of records of the same type, and from the same-typed histories of other
+     * entity classes.
+     *
+     * <p>The dash cannot occur in a Protobuf type name, so a grouped kind never
+     * collides with the kind of an ungrouped storage — which is a plain type name —
+     * even when one type is named after another with a suffix, such as {@code Order}
+     * and {@code Order_Event}.
      */
     public static Kind of(Class<? extends Message> recordType, StorageGroup group) {
         checkNotNull(recordType);
         checkNotNull(group);
-        var name = group.getName() + '_' + recordType.getSimpleName();
+        var name = group.getName() + '-' + recordType.getSimpleName();
         return new Kind(name);
     }
 

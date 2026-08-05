@@ -102,8 +102,8 @@ internal class GroupedKindAllocationSpec {
         val stateHistory = factory.createRecordStorage(context(), stateHistorySpec(), projectGroup)
 
         latestState.kindName() shouldBe "spine.test.storage.StgProject"
-        journal.kindName() shouldBe "spine.test.storage.StgProject_Event"
-        stateHistory.kindName() shouldBe "spine.test.storage.StgProject_EntityRecord"
+        journal.kindName() shouldBe "spine.test.storage.StgProject-Event"
+        stateHistory.kindName() shouldBe "spine.test.storage.StgProject-EntityRecord"
     }
 
     @Test
@@ -111,8 +111,8 @@ internal class GroupedKindAllocationSpec {
         val projectJournal = factory.createRecordStorage(context(), journalSpec(), projectGroup)
         val collegeJournal = factory.createRecordStorage(context(), journalSpec(), collegeGroup)
 
-        projectJournal.kindName() shouldBe "spine.test.storage.StgProject_Event"
-        collegeJournal.kindName() shouldBe "spine.test.datastore.College_Event"
+        projectJournal.kindName() shouldBe "spine.test.storage.StgProject-Event"
+        collegeJournal.kindName() shouldBe "spine.test.datastore.College-Event"
     }
 
     @Test
@@ -165,7 +165,7 @@ internal class GroupedKindAllocationSpec {
         // The name of the ungrouped event log is customized by the record type.
         eventLog.kindName() shouldBe "custom_event_log"
         // The grouped journal of the same record type keeps its generated kind.
-        journal.kindName() shouldBe "spine.test.storage.StgProject_Event"
+        journal.kindName() shouldBe "spine.test.storage.StgProject-Event"
     }
 
     @Test
@@ -188,7 +188,7 @@ internal class GroupedKindAllocationSpec {
 
         val journal = customized.createRecordStorage(context(), journalSpec(), projectGroup)
         customStorages shouldContainExactly listOf(eventLog)
-        journal.kindName() shouldBe "spine.test.storage.StgProject_Event"
+        journal.kindName() shouldBe "spine.test.storage.StgProject-Event"
     }
 
     @Test
@@ -218,7 +218,7 @@ internal class GroupedKindAllocationSpec {
         // The registration does not affect the ungrouped storage of the same entity type.
         latestState.kindName() shouldBe "spine.test.storage.StgProject"
         // Nor does it affect the group of a different entity type.
-        collegeJournal.kindName() shouldBe "spine.test.datastore.College_Event"
+        collegeJournal.kindName() shouldBe "spine.test.datastore.College-Event"
 
         // The custom-named journal is fully operational.
         val storage = customized.createEntityEventStorage(context(), TestEntity::class.java)

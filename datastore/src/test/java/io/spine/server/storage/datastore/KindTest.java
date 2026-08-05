@@ -132,6 +132,6 @@ final class KindTest {
     void testFromClassAndGroup() {
         var group = new StorageGroup("spine.test.storage.StgProject");
         var kind = Kind.of(FieldMask.class, group);
-        assertEquals("spine.test.storage.StgProject_FieldMask", kind.value());
+        assertEquals("spine.test.storage.StgProject-FieldMask", kind.value());
     }
 }
