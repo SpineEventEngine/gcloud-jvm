@@ -135,7 +135,7 @@ public final class RecordLayouts
                                                           StorageGroup group) {
         checkNotNull(recordType);
         checkNotNull(group);
-        var raw = groupedValues.get(new GroupedStorage(group.getName(), recordType));
+        var raw = groupedValues.get(new GroupedStorage(group, recordType));
         if (raw == null) {
             return new FlatLayout<>(Kind.of(recordType, group));
         }
@@ -237,15 +237,15 @@ public final class RecordLayouts
     }
 
     /**
-     * The identity of a grouped storage: the name of the storage group paired with
-     * the type of the stored records.
+     * The identity of a grouped storage: the {@linkplain StorageGroup storage group}
+     * paired with the type of the stored records.
      *
      * @param group
-     *         the name of the storage group
+     *         the group the storage belongs to
      * @param recordType
      *         the type of the stored records
      */
-    private record GroupedStorage(String group, Class<? extends Message> recordType) {
+    private record GroupedStorage(StorageGroup group, Class<? extends Message> recordType) {
 
         /**
          * Creates the identity of the grouped storage serving the entities with
@@ -254,8 +254,8 @@ public final class RecordLayouts
          */
         private static GroupedStorage of(Class<? extends EntityState<?>> stateType,
                                          Class<? extends Message> recordType) {
-            var groupName = TypeName.of(stateType).value();
-            return new GroupedStorage(groupName, recordType);
+            var group = new StorageGroup(TypeName.of(stateType).value());
+            return new GroupedStorage(group, recordType);
         }
     }
 }
