@@ -57,6 +57,17 @@ public final class Kind extends StringTypeValue {
 
     private static final String NAMESPACE_KIND = "__namespace__";
 
+    /**
+     * The separator between the group name and the record type in the name of
+     * a {@linkplain #of(Class, StorageGroup) grouped kind}.
+     *
+     * <p>The dash cannot occur in a Protobuf type name, which keeps grouped kinds
+     * apart from the type-name-derived kinds of ungrouped storages. Note that this
+     * separator deliberately differs from the {@code _} used by the JDBC storage
+     * implementation, where table names are constrained to SQL identifiers.
+     */
+    private static final char GROUP_SEPARATOR = '-';
+
     private Kind(String value) {
         super(checkValidKind(value));
     }
@@ -122,7 +133,7 @@ public final class Kind extends StringTypeValue {
     public static Kind of(Class<? extends Message> recordType, StorageGroup group) {
         checkNotNull(recordType);
         checkNotNull(group);
-        var name = group.getName() + '-' + recordType.getSimpleName();
+        var name = group.getName() + GROUP_SEPARATOR + recordType.getSimpleName();
         return new Kind(name);
     }
 
