@@ -35,11 +35,12 @@ import io.spine.base.Identifier;
 import io.spine.core.TenantId;
 import io.spine.server.BoundedContext;
 import io.spine.server.ContextSpec;
+import io.spine.server.entity.storage.SpecScanner;
 import io.spine.server.storage.RecordSpec;
 import io.spine.server.storage.RecordStorage;
 import io.spine.server.storage.StorageFactory;
-import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.DifferentTestEntity;
-import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.TestEntity;
+import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.CollegeProjection;
+import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.StgProjectAggregate;
 import io.spine.server.storage.datastore.given.TestEnvironment;
 import io.spine.server.storage.datastore.record.DsRecordStorage;
 import io.spine.server.storage.datastore.record.RecordId;
@@ -98,7 +99,7 @@ final class DatastoreStorageFactoryTest {
     void testCreateMultitenant() {
         StorageFactory factory = factoryFor(datastore);
         RecordStorage<?, ?> storage =
-                factory.createRecordStorage(TestEnvironment.multiTenantSpec(), TestEntity.spec());
+                factory.createRecordStorage(TestEnvironment.multiTenantSpec(), StgProjectAggregate.spec());
         assertTrue(storage.isMultitenant());
         storage.close();
     }
@@ -108,10 +109,10 @@ final class DatastoreStorageFactoryTest {
     void testDependsOnStateType() {
         var contextSpec = singleTenantSpec();
         var storage = (DsRecordStorage<?, ?>)
-                factory.createRecordStorage(contextSpec, TestEntity.spec());
+                factory.createRecordStorage(contextSpec, StgProjectAggregate.spec());
         assertNotNull(storage);
         var differentStorage = (DsRecordStorage<?, ?>)
-                factory.createRecordStorage(contextSpec, DifferentTestEntity.spec());
+                factory.createRecordStorage(contextSpec, SpecScanner.scan(CollegeProjection.class));
         assertNotNull(differentStorage);
         assertNotEquals(storage.kind(), differentStorage.kind());
     }

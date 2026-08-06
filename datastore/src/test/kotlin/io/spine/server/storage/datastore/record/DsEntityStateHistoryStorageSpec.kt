@@ -41,7 +41,7 @@ import io.spine.server.entity.EntityRecord
 import io.spine.server.entity.entityRecord
 import io.spine.server.entity.entityStateKey
 import io.spine.server.entity.storage.EntityStateHistoryStorage
-import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.TestEntity
+import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.StgProjectAggregate
 import io.spine.server.storage.datastore.record.given.HistoryStorageTestEnv.context
 import io.spine.test.storage.StgProjectId
 import io.spine.test.storage.stgProject
@@ -77,7 +77,7 @@ internal class DsEntityStateHistoryStorageSpec {
 
     @BeforeEach
     fun createStorage() {
-        storage = factory.createEntityStateHistoryStorage(context(), TestEntity::class.java)
+        storage = factory.createEntityStateHistoryStorage(context(), StgProjectAggregate::class.java)
         lastVersion = 0
     }
 

@@ -44,8 +44,8 @@ import io.spine.server.storage.datastore.DatastoreStorageFactory
 import io.spine.server.storage.datastore.Kind
 import io.spine.server.storage.datastore.config.CreateRecordStorage
 import io.spine.server.storage.datastore.config.FlatLayout
-import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.DifferentTestEntity
-import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.TestEntity
+import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.CollegeProjection
+import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.StgProjectAggregate
 import io.spine.server.storage.datastore.record.given.ProjectChildJournalLayout
 import io.spine.server.storage.datastore.record.given.HistoryStorageTestEnv.context
 import io.spine.server.storage.datastore.record.given.HistoryStorageTestEnv.journalSpec
@@ -77,8 +77,8 @@ import org.junit.jupiter.api.Test
 @EmulatorTest
 internal class GroupedKindAllocationSpec {
 
-    private val projectGroup = StorageGroup.of(TestEntity::class.java)
-    private val collegeGroup = StorageGroup.of(DifferentTestEntity::class.java)
+    private val projectGroup = StorageGroup.of(StgProjectAggregate::class.java)
+    private val collegeGroup = StorageGroup.of(CollegeProjection::class.java)
 
     private val factory = TestDatastoreStorageFactory.local()
 
@@ -97,7 +97,7 @@ internal class GroupedKindAllocationSpec {
 
     @Test
     fun `tell apart the latest state, event journal, and state history of an entity type`() {
-        val latestState = factory.createRecordStorage(context(), TestEntity.spec())
+        val latestState = factory.createRecordStorage(context(), StgProjectAggregate.spec())
         val journal = factory.createRecordStorage(context(), journalSpec(), projectGroup)
         val stateHistory = factory.createRecordStorage(context(), stateHistorySpec(), projectGroup)
 
@@ -118,9 +118,9 @@ internal class GroupedKindAllocationSpec {
     @Test
     fun `keep the events of an entity type out of the journals of other types`() {
         val projectJournal =
-            factory.createEntityEventStorage(context(), TestEntity::class.java)
+            factory.createEntityEventStorage(context(), StgProjectAggregate::class.java)
         val collegeJournal =
-            factory.createEntityEventStorage(context(), DifferentTestEntity::class.java)
+            factory.createEntityEventStorage(context(), CollegeProjection::class.java)
 
         projectJournal.write(newEvent())
 
@@ -140,8 +140,8 @@ internal class GroupedKindAllocationSpec {
 
     @Test
     fun `serve one physical kind to the repeatedly created storages of one group`() {
-        val first = factory.createEntityEventStorage(context(), TestEntity::class.java)
-        val second = factory.createEntityEventStorage(context(), TestEntity::class.java)
+        val first = factory.createEntityEventStorage(context(), StgProjectAggregate::class.java)
+        val second = factory.createEntityEventStorage(context(), StgProjectAggregate::class.java)
         val event = newEvent()
 
         first.write(event)
@@ -210,7 +210,7 @@ internal class GroupedKindAllocationSpec {
         val journal = customized.createRecordStorage(context(), journalSpec(), projectGroup)
         val stateHistory =
             customized.createRecordStorage(context(), stateHistorySpec(), projectGroup)
-        val latestState = customized.createRecordStorage(context(), TestEntity.spec())
+        val latestState = customized.createRecordStorage(context(), StgProjectAggregate.spec())
         val collegeJournal = customized.createRecordStorage(context(), journalSpec(), collegeGroup)
 
         journal.kindName() shouldBe "project_journal"
@@ -221,7 +221,7 @@ internal class GroupedKindAllocationSpec {
         collegeJournal.kindName() shouldBe "spine.test.datastore.College-Event"
 
         // The custom-named journal is fully operational.
-        val storage = customized.createEntityEventStorage(context(), TestEntity::class.java)
+        val storage = customized.createEntityEventStorage(context(), StgProjectAggregate::class.java)
         val event = newEvent()
         storage.write(event)
         storage.historyBackward(producerOf(event), batchSize = 1)

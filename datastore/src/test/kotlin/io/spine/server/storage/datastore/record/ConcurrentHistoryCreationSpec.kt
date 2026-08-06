@@ -34,8 +34,8 @@ import io.spine.core.Versions
 import io.spine.protobuf.AnyPacker
 import io.spine.server.entity.entityRecord
 import io.spine.server.storage.datastore.DatastoreStorageFactory
-import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.DifferentTestEntity
-import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.TestEntity
+import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.CollegeProjection
+import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.StgProjectAggregate
 import io.spine.server.storage.datastore.record.given.HistoryStorageTestEnv.context
 import io.spine.test.storage.stgProject
 import io.spine.test.storage.stgProjectId
@@ -80,10 +80,10 @@ internal class ConcurrentHistoryCreationSpec {
                     started.await()
                     if (index % 2 == 0) {
                         factory.createEntityStateHistoryStorage(
-                            context, TestEntity::class.java
+                            context, StgProjectAggregate::class.java
                         )
                     } else {
-                        factory.createEntityEventStorage(context, DifferentTestEntity::class.java)
+                        factory.createEntityEventStorage(context, CollegeProjection::class.java)
                     }
                 }
             }
@@ -103,8 +103,8 @@ internal class ConcurrentHistoryCreationSpec {
             state = AnyPacker.pack(stgProject { id = entityId })
             version = Versions.newVersion(1, currentTime())
         }
-        val writer = factory.createEntityStateHistoryStorage(context, TestEntity::class.java)
-        val reader = factory.createEntityStateHistoryStorage(context, TestEntity::class.java)
+        val writer = factory.createEntityStateHistoryStorage(context, StgProjectAggregate::class.java)
+        val reader = factory.createEntityStateHistoryStorage(context, StgProjectAggregate::class.java)
         writer.write(record)
         reader.historyBackward(entityId, batchSize = 1)
             .asSequence()

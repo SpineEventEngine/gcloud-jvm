@@ -39,7 +39,7 @@ import io.spine.core.Event
 import io.spine.core.Versions.increment
 import io.spine.core.Versions.zero
 import io.spine.server.entity.storage.EntityEventStorage
-import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.TestEntity
+import io.spine.server.storage.datastore.given.DatastoreStorageFactoryTestEnv.StgProjectAggregate
 import io.spine.server.storage.datastore.record.given.HistoryStorageTestEnv.context
 import io.spine.test.storage.StgProjectId
 import io.spine.test.storage.event.StgProjectCreated
@@ -74,7 +74,7 @@ internal class DsEntityEventStorageSpec {
 
     @BeforeEach
     fun createStorage() {
-        storage = factory.createEntityEventStorage(context(), TestEntity::class.java)
+        storage = factory.createEntityEventStorage(context(), StgProjectAggregate::class.java)
         version = zero()
     }
 

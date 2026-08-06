@@ -62,19 +62,15 @@ public final class DatastoreStorageFactoryTestEnv {
                 .build();
     }
 
-    public static class TestEntity
+    public static class StgProjectAggregate
             extends Aggregate<StgProjectId, StgProject, StgProject.Builder> {
 
         public static RecordSpec<StgProjectId, EntityRecord> spec() {
-            return SpecScanner.scan(TestEntity.class);
+            return SpecScanner.scan(StgProjectAggregate.class);
         }
     }
 
-    public static class DifferentTestEntity
+    public static class CollegeProjection
             extends Projection<CollegeId, College, College.Builder> {
-
-        public static RecordSpec<CollegeId, EntityRecord> spec() {
-            return SpecScanner.scan(DifferentTestEntity.class);
-        }
     }
 }
