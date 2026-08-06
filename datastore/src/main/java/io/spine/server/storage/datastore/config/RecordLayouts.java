@@ -185,7 +185,7 @@ public final class RecordLayouts
      * A builder for {@code RecordLayouts}.
      */
     public static final class Builder
-            extends Settings.Builder<RecordLayout<?, ?>, RecordLayouts, RecordLayouts.Builder> {
+            extends Settings.Builder<RecordLayout<?, ?>, RecordLayouts, Builder> {
 
         private final Map<GroupedStorage, RecordLayout<?, ?>> groupedValues = new HashMap<>();
 
@@ -231,7 +231,7 @@ public final class RecordLayouts
          * Creates a new instance of {@code RecordLayouts} on top of this {@code Builder} instance.
          */
         @Override
-        public final RecordLayouts build() {
+        public RecordLayouts build() {
             return new RecordLayouts(this);
         }
     }
