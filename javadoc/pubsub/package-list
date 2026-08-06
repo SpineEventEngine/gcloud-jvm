@@ -1,5 +1,4 @@
 $dokka.format:javadoc-v1
 $dokka.linkExtension:html
 $dokka.location:io.spine.pubsub/PubsubPushRequest.Builder///PointingToDeclaration/io/spine/pubsub/PubsubPushRequest.Builder.html
-$dokka.location:io.spine.pubsub/PubsubPushRequestKt.Dsl///PointingToDeclaration/io/spine/pubsub/PubsubPushRequestKt.Dsl.html
 io.spine.pubsub
