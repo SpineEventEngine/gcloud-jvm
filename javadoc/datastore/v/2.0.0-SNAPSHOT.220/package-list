@@ -1,0 +1,10 @@
+$dokka.format:javadoc-v1
+$dokka.linkExtension:html
+$dokka.location:io.spine.server.storage.datastore.config/StorageConfiguration.Builder///PointingToDeclaration/io/spine/server/storage/datastore/config/StorageConfiguration.Builder.html
+$dokka.location:io.spine.server.storage.datastore/DatastoreStorageFactory.Builder///PointingToDeclaration/io/spine/server/storage/datastore/DatastoreStorageFactory.Builder.html
+io.spine.server.storage.datastore
+io.spine.server.storage.datastore.config
+io.spine.server.storage.datastore.delivery
+io.spine.server.storage.datastore.query
+io.spine.server.storage.datastore.record
+io.spine.server.storage.datastore.tenant
