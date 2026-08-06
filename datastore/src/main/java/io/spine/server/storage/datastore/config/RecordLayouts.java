@@ -1,11 +1,11 @@
 /*
- * Copyright 2023, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -26,9 +26,19 @@
 
 package io.spine.server.storage.datastore.config;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Message;
 import io.spine.annotation.Internal;
+import io.spine.base.EntityState;
+import io.spine.server.storage.StorageGroup;
+import io.spine.server.storage.datastore.Kind;
+import io.spine.type.TypeName;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 import static io.spine.util.Exceptions.newIllegalArgumentException;
 
 /**
@@ -40,14 +50,25 @@ import static io.spine.util.Exceptions.newIllegalArgumentException;
  * for stored records via
  * {@link io.spine.server.storage.datastore.DatastoreStorageFactory.Builder#organizeRecords(Class,
  * RecordLayout)
- * DatastoreStorageFactory.newBuilder().organizeRecords(...)}.
+ * DatastoreStorageFactory.newBuilder().organizeRecords(...)}, and for the records of
+ * {@linkplain StorageGroup grouped} storages via
+ * {@link io.spine.server.storage.datastore.DatastoreStorageFactory.Builder#organizeRecords(Class,
+ * Class, RecordLayout)
+ * the three-argument flavor of the same method}.
  */
 @Internal
 public final class RecordLayouts
         extends Settings<RecordLayout<?, ?>, RecordLayouts, RecordLayouts.Builder> {
 
+    /**
+     * The layouts of the {@linkplain StorageGroup grouped} storages,
+     * per the identity of a grouped storage.
+     */
+    private final ImmutableMap<GroupedStorage, RecordLayout<?, ?>> groupedValues;
+
     private RecordLayouts(Builder builder) {
         super(builder);
+        groupedValues = ImmutableMap.copyOf(builder.groupedValues);
     }
 
     /**
@@ -84,6 +105,41 @@ public final class RecordLayouts
         }
         var raw = optional.get();
         RecordLayout<I, R> result = cast(raw, domainType);
+        return result;
+    }
+
+    /**
+     * Obtains the record layout for the {@linkplain StorageGroup grouped} storage
+     * of the records of the specified type, created on behalf of the given group.
+     *
+     * <p>If a custom layout was not
+     * {@linkplain Builder#add(Class, Class, RecordLayout) registered} for the state
+     * and the record types of the storage, {@linkplain FlatLayout a flat layout} under
+     * the {@linkplain Kind#of(Class, StorageGroup) grouped kind} is used.
+     *
+     * @param recordType
+     *         the type of records
+     * @param group
+     *         the group the storage belongs to
+     * @param <I>
+     *         the type of record identifiers
+     * @param <R>
+     *         the type of records, as a bounding generic parameter
+     * @return the record layout for the storage
+     * @throws IllegalArgumentException
+     *         if the record layout of wrong type was supplied on the configuration stage
+     * @implNote See the {@linkplain #find(Class) single-type flavor} on the class-cast
+     *         performed here.
+     */
+    public <I, R extends Message> RecordLayout<I, R> find(Class<R> recordType,
+                                                          StorageGroup group) {
+        checkNotNull(recordType);
+        checkNotNull(group);
+        var raw = groupedValues.get(new GroupedStorage(group, recordType));
+        if (raw == null) {
+            return new FlatLayout<>(Kind.of(recordType, group));
+        }
+        RecordLayout<I, R> result = cast(raw, recordType);
         return result;
     }
 
@@ -129,7 +185,9 @@ public final class RecordLayouts
      * A builder for {@code RecordLayouts}.
      */
     public static final class Builder
-            extends Settings.Builder<RecordLayout<?, ?>, RecordLayouts, RecordLayouts.Builder> {
+            extends Settings.Builder<RecordLayout<?, ?>, RecordLayouts, Builder> {
+
+        private final Map<GroupedStorage, RecordLayout<?, ?>> groupedValues = new HashMap<>();
 
         private Builder() {
             super();
@@ -141,11 +199,63 @@ public final class RecordLayouts
         }
 
         /**
+         * Adds a layout for the {@linkplain StorageGroup grouped} storage serving
+         * the entities with the specified state type and storing the records
+         * of the specified type.
+         *
+         * <p>Each next layout added for the same state and record types overwrites
+         * the previous one.
+         *
+         * @param stateType
+         *         the type of the state of the entity served by the grouped storage
+         * @param recordType
+         *         the type of the records stored by the grouped storage
+         * @param layout
+         *         the layout to use
+         * @param <R>
+         *         the type of the stored records
+         * @return this instance of {@code Builder}
+         */
+        @CanIgnoreReturnValue
+        public <R extends Message> Builder add(Class<? extends EntityState<?>> stateType,
+                                               Class<R> recordType,
+                                               RecordLayout<?, R> layout) {
+            checkNotNull(stateType);
+            checkNotNull(recordType);
+            checkNotNull(layout);
+            groupedValues.put(GroupedStorage.of(stateType, recordType), layout);
+            return this;
+        }
+
+        /**
          * Creates a new instance of {@code RecordLayouts} on top of this {@code Builder} instance.
          */
         @Override
-        public final RecordLayouts build() {
+        public RecordLayouts build() {
             return new RecordLayouts(this);
+        }
+    }
+
+    /**
+     * The identity of a grouped storage: the {@linkplain StorageGroup storage group}
+     * paired with the type of the stored records.
+     *
+     * @param group
+     *         the group the storage belongs to
+     * @param recordType
+     *         the type of the stored records
+     */
+    private record GroupedStorage(StorageGroup group, Class<? extends Message> recordType) {
+
+        /**
+         * Creates the identity of the grouped storage serving the entities with
+         * the given state type — after which the framework names the storage group —
+         * and storing the records of the given type.
+         */
+        private static GroupedStorage of(Class<? extends EntityState<?>> stateType,
+                                         Class<? extends Message> recordType) {
+            var group = new StorageGroup(TypeName.of(stateType).value());
+            return new GroupedStorage(group, recordType);
         }
     }
 }

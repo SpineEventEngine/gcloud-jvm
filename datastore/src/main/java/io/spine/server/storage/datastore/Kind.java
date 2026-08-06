@@ -1,11 +1,11 @@
 /*
- * Copyright 2023, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -29,9 +29,12 @@ package io.spine.server.storage.datastore;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
 import io.spine.annotation.Internal;
+import io.spine.server.storage.StorageGroup;
 import io.spine.type.TypeName;
 import io.spine.type.TypeUrl;
 import io.spine.value.StringTypeValue;
+
+import java.io.Serial;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -43,6 +46,7 @@ import static io.spine.util.Preconditions2.checkNotEmptyOrBlank;
  */
 public final class Kind extends StringTypeValue {
 
+    @Serial
     private static final long serialVersionUID = 0L;
 
     private static final String INVALID_KIND_ERROR_MESSAGE =
@@ -52,6 +56,17 @@ public final class Kind extends StringTypeValue {
     private static final String FORBIDDEN_PREFIX = "__";
 
     private static final String NAMESPACE_KIND = "__namespace__";
+
+    /**
+     * The separator between the group name and the record type in the name of
+     * a {@linkplain #of(Class, StorageGroup) grouped kind}.
+     *
+     * <p>The dash cannot occur in a Protobuf type name, which keeps grouped kinds
+     * apart from the type-name-derived kinds of ungrouped storages. Note that this
+     * separator deliberately differs from the {@code _} used by the JDBC storage
+     * implementation, where table names are constrained to SQL identifiers.
+     */
+    private static final char GROUP_SEPARATOR = '-';
 
     private Kind(String value) {
         super(checkValidKind(value));
@@ -98,6 +113,28 @@ public final class Kind extends StringTypeValue {
         var typeUrl = TypeUrl.of(recordType);
         var result = of(typeUrl);
         return result;
+    }
+
+    /**
+     * Creates a new {@code Kind} for the records of the given type stored on behalf
+     * of the given {@linkplain StorageGroup storage group}.
+     *
+     * <p>The name is composed of the group name and the simple name of the record type,
+     * joined with a dash: e.g. {@code spine.test.storage.StgProject-Event}. Such a kind
+     * tells a grouped storage — a per-entity history — apart from the ungrouped storage
+     * of records of the same type, and from the same-typed histories of other
+     * entity classes.
+     *
+     * <p>The dash cannot occur in a Protobuf type name, so a grouped kind never
+     * collides with the kind of an ungrouped storage — which is a plain type name —
+     * even when one type is named after another with a suffix, such as {@code Order}
+     * and {@code Order_Event}.
+     */
+    public static Kind of(Class<? extends Message> recordType, StorageGroup group) {
+        checkNotNull(recordType);
+        checkNotNull(group);
+        var name = group.getName() + GROUP_SEPARATOR + recordType.getSimpleName();
+        return new Kind(name);
     }
 
     /**

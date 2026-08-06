@@ -1,11 +1,11 @@
 /*
- * Copyright 2023, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -32,6 +32,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.FieldMask;
 import com.google.protobuf.Message;
+import io.spine.server.storage.StorageGroup;
 import io.spine.type.TypeName;
 import io.spine.type.TypeUrl;
 import org.junit.jupiter.api.DisplayName;
@@ -52,6 +53,7 @@ final class KindTest {
                 .setDefault(Descriptors.Descriptor.class, Any.getDescriptor())
                 .setDefault(Message.class, Any.getDefaultInstance())
                 .setDefault(TypeName.class, TypeName.of(Any.class))
+                .setDefault(StorageGroup.class, new StorageGroup("test-group"))
                 .testStaticMethods(Kind.class, NullPointerTester.Visibility.PACKAGE);
     }
 
@@ -123,5 +125,13 @@ final class KindTest {
         var kind = Kind.of(type);
         assertEquals(descriptor.getFullName(), kind.value());
         assertEquals(type.value(), kind.value());
+    }
+
+    @Test
+    @DisplayName("construct from a record type and a storage group")
+    void testFromClassAndGroup() {
+        var group = new StorageGroup("spine.test.storage.StgProject");
+        var kind = Kind.of(FieldMask.class, group);
+        assertEquals("spine.test.storage.StgProject-FieldMask", kind.value());
     }
 }

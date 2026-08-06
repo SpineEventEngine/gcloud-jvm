@@ -1,11 +1,11 @@
 /*
- * Copyright 2023, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Redistribution and use in source and/or binary forms, with or without
  * modification, must retain the above copyright notice and the following
@@ -72,6 +72,26 @@ public abstract class EntityGroupLayout<I, R extends Message, P extends Message>
      */
     protected EntityGroupLayout(Class<R> recordType, Class<P> parentType) {
         super(recordType);
+        parentKind = Kind.of(parentType);
+    }
+
+    /**
+     * Creates the layout for the storage keeping its records under the given
+     * Datastore Entity {@code Kind}, as children of records of the passed parent type.
+     *
+     * <p>Serves the storages whose kind is not derived from the record type alone —
+     * such as the per-entity histories; see {@link
+     * io.spine.server.storage.datastore.DatastoreStorageFactory.Builder#organizeRecords(Class,
+     * Class, RecordLayout)
+     * DatastoreStorageFactory.Builder.organizeRecords(Class, Class, RecordLayout)}.
+     *
+     * @param kind
+     *         the kind of the stored records
+     * @param parentType
+     *         the type of parent records for the stored records
+     */
+    protected EntityGroupLayout(Kind kind, Class<P> parentType) {
+        super(kind);
         parentKind = Kind.of(parentType);
     }
 

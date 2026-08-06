@@ -461,7 +461,7 @@ fun Project.setupTestTasks() {
             }
         }
 
-        val copyCredentials by registering(Copy::class) {
+        val copyCredentials = register<Copy>("copyCredentials") {
             val resourceDir = "$projectDir/src/test/resources"
             val fileName = "spine-dev.json"
             val sourceFile = file("$rootDir/$fileName")

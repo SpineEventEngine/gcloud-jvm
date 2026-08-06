@@ -27,10 +27,12 @@
 package io.spine.gradle.publish
 
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import io.spine.gradle.publish.IncrementGuard.Companion.localPublishPlanned
 import io.spine.gradle.publish.IncrementGuard.Companion.mustVerify
 import io.spine.gradle.publish.IncrementGuard.Companion.shouldCheckVersion
+import io.spine.gradle.publish.IncrementGuard.Companion.shouldCompareToBase
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
@@ -115,6 +117,33 @@ class IncrementGuardTest {
     }
 
     @Nested
+    inner class `compare against the base branch` {
+
+        @Test
+        fun `inside the Version Guard workflow with a base branch`() {
+            shouldCompareToBase(underVersionGuard = true, baseRef = "master") shouldBe true
+            shouldCompareToBase(underVersionGuard = true, baseRef = "2.x-jdk8-master") shouldBe true
+        }
+    }
+
+    @Nested
+    inner class `not compare against the base branch` {
+
+        @Test
+        fun `outside the Version Guard workflow`() {
+            // The Ubuntu/Windows CI builds pull the task in via `publishToMavenLocal`,
+            // but they never fetch the base ref, so `VERSION_GUARD` is unset.
+            shouldCompareToBase(underVersionGuard = false, baseRef = "master") shouldBe false
+        }
+
+        @Test
+        fun `when no base branch is present`() {
+            shouldCompareToBase(underVersionGuard = true, baseRef = null) shouldBe false
+            shouldCompareToBase(underVersionGuard = true, baseRef = "") shouldBe false
+        }
+    }
+
+    @Nested
     inner class `detect a Maven Local publish` {
 
         @Test
@@ -145,14 +174,6 @@ class IncrementGuardTest {
     inner class `make 'checkVersionIncrement' a dependency of` {
 
         @Test
-        fun `the 'check' task`() {
-            val project = guardedProject()
-            val check = project.tasks.getByName("check")
-
-            check.dependencyNames() shouldContain IncrementGuard.taskName
-        }
-
-        @Test
         fun `every Maven Local publishing task`() {
             val project = guardedProject()
             val localPublish = project.tasks.register(
@@ -161,6 +182,22 @@ class IncrementGuardTest {
             ).get()
 
             localPublish.dependencyNames() shouldContain IncrementGuard.taskName
+        }
+    }
+
+    @Nested
+    inner class `keep 'checkVersionIncrement' out of` {
+
+        @Test
+        fun `the 'check' lifecycle task`() {
+            // The CI check runs via the `Version Guard` workflow, which fetches the
+            // base branch first. Wiring it into `check` would run it in every
+            // `./gradlew build`, where `origin/<base>` is absent and the fail-closed
+            // base comparison would break the build.
+            val project = guardedProject()
+            val check = project.tasks.getByName("check")
+
+            check.dependencyNames() shouldNotContain IncrementGuard.taskName
         }
     }
 }

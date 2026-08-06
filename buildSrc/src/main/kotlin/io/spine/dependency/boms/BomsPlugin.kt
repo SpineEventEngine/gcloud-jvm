@@ -29,6 +29,7 @@ package io.spine.dependency.boms
 import io.gitlab.arturbosch.detekt.getSupportedKotlinVersion
 import io.spine.dependency.DependencyWithBom
 import io.spine.dependency.diagSuffix
+import io.spine.dependency.isDokka
 import io.spine.dependency.kotlinx.Coroutines
 import io.spine.dependency.lib.Kotlin
 import io.spine.dependency.test.JUnit
@@ -56,7 +57,7 @@ import org.gradle.api.artifacts.ConfigurationContainer
  *
  *  In addition to forcing BOM-based dependencies,
  *  the plugin [forces][org.gradle.api.artifacts.ResolutionStrategy.force] the versions
- *  of [Kotlin.StdLib.artifacts] for all configurations because even through Kotlin
+ *  of [Kotlin.StdLib.artifacts] for all configurations because even though Kotlin
  *  artifacts are forced with BOM, the `variants` in the dependencies cannot be
  *  picked by Gradle.
  *
@@ -88,7 +89,7 @@ class BomsPlugin : Plugin<Project>  {
                 applyBoms(project, Boms.core + Boms.testing)
             }
 
-            matching { !supportsBom(it.name) }.all {
+            matching { !supportsBom(it.name) && !it.isDokka }.all {
                 resolutionStrategy.eachDependency {
                     if (requested.group == Kotlin.group) {
                         val kotlinVersion = Kotlin.runtimeVersion
@@ -170,7 +171,7 @@ private fun supportsBom(name: String) =
 private fun Project.forceArtifacts() =
     configurations.all {
         resolutionStrategy {
-            if (!isDetekt) {
+            if (!isDetekt && !isDokka) {
                 val rs = this@resolutionStrategy
                 val project = this@forceArtifacts
                 val cfg = this@all

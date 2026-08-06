@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, TeamDev. All rights reserved.
+ * Copyright 2026, TeamDev. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.spine.dependency.local
+package io.spine.gradle.publish
 
-/**
- * Spine Model Compiler Gradle API.
- *
- * @see <a href="https://github.com/SpineEventEngine/model-compiler">spine-model-compiler</a>
- */
-@Suppress("ConstPropertyName")
-object ModelCompiler {
-    const val version = "2.0.0-SNAPSHOT.200"
-    const val group = Spine.toolsGroup
-    const val artifact = "spine-model-compiler"
-    const val lib = "$group:$artifact:$version"
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import io.kotest.matchers.collections.shouldContainExactly
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+
+@DisplayName("`MavenMetadata` should")
+internal class MavenMetadataSpec {
+
+    /**
+     * Round-trips through the same [XmlMapper] used in production, asserting the version list
+     * survives. This guards the `var` properties of [MavenMetadata] and [Versioning]: a `val`
+     * (or `internal`-mangled setter) would leave the list empty after deserialization, silently
+     * disabling the "already published" check.
+     */
+    @Test
+    fun `survive a Jackson round-trip, keeping its versions`() {
+        val versions = listOf("2.0.0-SNAPSHOT.79", "2.0.0-SNAPSHOT.80", "2.0.0-SNAPSHOT.81")
+        val mapper = XmlMapper()
+
+        val xml = mapper.writeValueAsString(MavenMetadata(Versioning(versions)))
+        val parsed = mapper.readValue(xml, MavenMetadata::class.java)
+
+        parsed.versioning.versions shouldContainExactly versions
+    }
 }

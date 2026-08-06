@@ -26,12 +26,46 @@
 
 package io.spine.dependency.test
 
-// https://github.com/testcontainers/testcontainers-java
+/**
+ * Testcontainers for Java — provides throwaway, lightweight instances of databases and other
+ * services running in Docker containers.
+ *
+ * The modules below are versioned and released together, so a single [version] applies to all
+ * of them.
+ *
+ * Starting with version 2.x, module artifacts are prefixed with `testcontainers-`,
+ * while the core [lib] artifact keeps the plain `testcontainers` name.
+ *
+ * @see <a href="https://github.com/testcontainers/testcontainers-java">
+ *     Testcontainers for Java at GitHub</a>
+ */
 @Suppress("unused", "ConstPropertyName")
 object Testcontainers {
     private const val version = "2.0.5"
     private const val group = "org.testcontainers"
+
+    /**
+     * The core Testcontainers library.
+     */
     const val lib = "$group:testcontainers:$version"
+
+    /**
+     * The JUnit 5 (Jupiter) integration.
+     */
     const val junitJupiter = "$group:testcontainers-junit-jupiter:$version"
+
+    /**
+     * The Google Cloud (GCP) emulator container support.
+     */
     const val gcloud = "$group:testcontainers-gcloud:$version"
+
+    /**
+     * The MySQL container support.
+     */
+    const val mySql = "$group:testcontainers-mysql:$version"
+
+    /**
+     * The PostgreSQL container support.
+     */
+    const val postgresql = "$group:testcontainers-postgresql:$version"
 }
