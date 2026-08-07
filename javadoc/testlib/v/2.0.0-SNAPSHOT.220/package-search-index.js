@@ -1,0 +1,1 @@
+var packageSearchIndex = [{"l":"io.spine.testing.server.storage.datastore","url":"io/spine/testing/server/storage/datastore/package-summary.html"}, {"l":"All packages","url":"index.html"}]
