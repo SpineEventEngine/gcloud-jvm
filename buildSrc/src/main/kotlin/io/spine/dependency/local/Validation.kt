@@ -61,8 +61,5 @@ object Validation {
 
     val javaBundle = javaBundle(version)
 
-    const val model = "$group:$prefix-model:$version"
-
-    const val configModule = "$group:$prefix-configuration"
     const val context = "$group:$prefix-context:$version"
 }
