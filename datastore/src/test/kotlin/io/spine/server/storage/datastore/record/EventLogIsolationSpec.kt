@@ -27,20 +27,29 @@
 package io.spine.server.storage.datastore.record
 
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.spine.base.Identifier
 import io.spine.base.Identifier.newUuid
+import io.spine.core.BoundedContextNames.newName
 import io.spine.core.Event
 import io.spine.core.EventId
 import io.spine.grpc.StreamObservers.memoizingObserver
 import io.spine.server.ContextSpec
 import io.spine.server.event.EventStore
 import io.spine.server.event.EventStreamQuery
+import io.spine.server.storage.RecordSpec
+import io.spine.server.storage.StorageGroup
+import io.spine.server.storage.datastore.DatastoreStorageFactory
+import io.spine.server.storage.datastore.Kind
+import io.spine.server.storage.datastore.config.FlatLayout
 import io.spine.test.storage.event.StgProjectCreated
 import io.spine.test.storage.stgProjectId
 import io.spine.testdata.Sample
 import io.spine.testing.server.TestEventFactory
 import io.spine.testing.server.storage.datastore.EmulatorTest
 import io.spine.testing.server.storage.datastore.TestDatastoreStorageFactory
+import io.spine.testing.server.storage.datastore.TestDatastores
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -50,7 +59,7 @@ import org.junit.jupiter.api.Test
  * [DatastoreStorageFactory][io.spine.server.storage.datastore.DatastoreStorageFactory]
  * land in distinct Datastore kinds.
  *
- * Since core-jvm groups the storage of an event store by the Bounded Context,
+ * Since `core-jvm` groups the storage of an event store by the Bounded Context,
  * the storages of the two contexts below arrive at the factory with distinct
  * groups, and each `read` observes only the events appended to its own context.
  */
@@ -60,9 +69,16 @@ internal class EventLogIsolationSpec {
 
     private val factory = TestDatastoreStorageFactory.local()
 
+    /**
+     * A factory with a customized layout, created by the tests that need one.
+     */
+    private var customized: TestDatastoreStorageFactory? = null
+
     @AfterEach
     fun clearData() {
         factory.tearDown()
+        customized?.tearDown()
+        customized = null
     }
 
     @Test
@@ -78,6 +94,60 @@ internal class EventLogIsolationSpec {
         idsOf(billing) shouldContainExactly listOf(billingEvent.id)
         idsOf(shipping) shouldContainExactly listOf(shippingEvent.id)
     }
+
+    /**
+     * Verifies the effect of the context-addressed layout registration —
+     * the scenario shown in the Javadoc of
+     * [DatastoreStorageFactory.Builder.organizeRecords] and in the migration guide.
+     */
+    @Test
+    fun `honor the custom kind registered for the event store of a context`() {
+        val customized = TestDatastoreStorageFactory.basedOn(
+            DatastoreStorageFactory.newBuilderWithDefaults(TestDatastores.local())
+                .organizeRecords(
+                    newName("Billing"),
+                    Event::class.java,
+                    FlatLayout<EventId, Event>(Kind.of("BillingJournal"))
+                )
+        )
+        this.customized = customized
+
+        val billing = customized.createEventStore(ContextSpec.singleTenant("Billing"))
+        val shipping = customized.createEventStore(ContextSpec.singleTenant("Shipping"))
+
+        // The event store of `Billing` takes the registered kind, while the store
+        // of the context with no registration keeps the derived one.
+        customized.kindOfEventStore("Billing") shouldBe "BillingJournal"
+        customized.kindOfEventStore("Shipping") shouldBe "Shipping-Event"
+
+        val billingEvent = newEvent()
+        billing.append(billingEvent)
+        shipping.append(newEvent())
+
+        idsOf(billing) shouldContainExactly listOf(billingEvent.id)
+    }
+
+    /**
+     * Returns the name of the kind backing the event store of the named context.
+     */
+    private fun DatastoreStorageFactory.kindOfEventStore(context: String): String {
+        val group = StorageGroup.of(newName(context))
+        val storage = createRecordStorage(
+            ContextSpec.singleTenant(context), eventSpec(), group
+        )
+        return storage.shouldBeInstanceOf<DsRecordStorage<*, *>>()
+            .kind()
+            .value()
+    }
+
+    /**
+     * Composes a record specification equal in identity to the one the event
+     * store uses: `Event` records under `EventId` identifiers.
+     */
+    private fun eventSpec(): RecordSpec<EventId, Event> =
+        RecordSpec(EventId::class.java, Event::class.java) { event ->
+            requireNotNull(event.id)
+        }
 
     /**
      * Pins the storage-level case-sensitivity of Datastore kinds.

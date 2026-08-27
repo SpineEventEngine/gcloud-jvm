@@ -14,8 +14,8 @@ Starting with `core-jvm` `2.0.0-SNAPSHOT.540`, the event store of each context i
 a grouped storage, and its records land under a per-context kind: `Billing-Event`,
 `Shipping-Event`, `Billing_System-Event`, and so on. The kind is composed of the
 context name — taken verbatim — and the simple name of the record type, joined with
-a dash; see `Kind.of(Class, StorageGroup)`. See the `core-jvm` pull request
-[#1673][core-pr] for the rationale.
+a dash; see `Kind.of(Class, StorageGroup)`. The rationale is discussed in
+the `core-jvm` pull request [#1673][core-pr].
 
 Unlike RDBMS identifiers, Datastore kinds involve no quoting, folding, truncation,
 or case-insensitivity: the composed kind is stored exactly as written, and
@@ -25,7 +25,7 @@ The library does **not** move the previously stored events: an upgraded applicat
 starts reading and writing the per-context kinds, while the historical events stay
 under `spine.core.Event`. Deployments that rely on the stored event log — event
 replay, projection catch-up, audit — should migrate the historical events before
-switching the upgraded version on.
+switching to the upgraded version.
 
 No other kinds are renamed by the upgrade.
 
@@ -43,12 +43,11 @@ template][dataflow-migration], or a script over the Datastore API:
    the context.
 2. Re-create each entity under the `<Context>-Event` kind with the same key name
    and properties.
-3. Verify the counts per kind, then keep the `spine.core.Event` entities as an
+3. Verify the counts per kind. Then keep the `spine.core.Event` entities as an
    archive until the migrated deployment is verified; the upgraded application
    does not touch them.
 
-For a multi-tenant application, repeat the copy in every
-[namespace](https://cloud.google.com/datastore/docs/concepts/multitenancy) —
+For a multi-tenant application, repeat the copy in every [namespace][ds-namespace] —
 namespaces hold the per-tenant data and are not affected by this change.
 
 ## Special cases
@@ -74,4 +73,5 @@ namespaces hold the per-tenant data and are not affected by this change.
   `spine.core.Event` kind, declare the same indexes for each per-context kind.
 
 [core-pr]: https://github.com/SpineEventEngine/core-jvm/pull/1673
+[ds-namespace]: https://cloud.google.com/datastore/docs/concepts/multitenancy
 [dataflow-migration]: https://cloud.google.com/dataflow/docs/guides/templates/provided/datastore-to-datastore-delete

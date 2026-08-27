@@ -55,7 +55,10 @@ import static io.spine.util.Exceptions.newIllegalArgumentException;
  * {@linkplain StorageGroup grouped} storages via
  * {@link io.spine.server.storage.datastore.DatastoreStorageFactory.Builder#organizeRecords(Class,
  * Class, RecordLayout)
- * the three-argument flavor of the same method}.
+ * the three-argument flavor of the same method}. The storage grouped by a Bounded
+ * Context — the event store of the context — is addressed by
+ * {@link io.spine.server.storage.datastore.DatastoreStorageFactory.Builder#organizeRecords(
+ * io.spine.core.BoundedContextName, Class, RecordLayout) the context-addressed flavor}.
  */
 @Internal
 public final class RecordLayouts

@@ -382,8 +382,8 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
                 "`setNamespaceConverter` and `setConverterFactory` are mutually exclusive; " +
                         "only one of them may be called.";
 
-        private @MonotonicNonNull Datastore datastore;
-        private @MonotonicNonNull ColumnMapping<Value<?>> columnMapping;
+        private @MonotonicNonNull Datastore datastore = null;
+        private @MonotonicNonNull ColumnMapping<Value<?>> columnMapping = null;
         private @Nullable NamespaceConverter namespaceConverter = null;
         private @Nullable NamespaceConverterFactory converterFactory = null;
         private final TxSettings.Builder txSettings = TxSettings.newBuilder();

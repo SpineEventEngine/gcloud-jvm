@@ -85,6 +85,8 @@ buildscript {
                 val logging = io.spine.dependency.local.Logging
                 val cfg = this@all
                 val rs = this@resolutionStrategy
+                // The `JacksonV2` groups are nested objects, so they cannot be
+                // reached through a `val` alias of the enclosing object.
                 io.spine.dependency.lib.JacksonV2.Core.forceArtifacts(project, cfg, rs)
                 io.spine.dependency.lib.JacksonV2.DataType.forceArtifacts(project, cfg, rs)
                 io.spine.dependency.lib.JacksonV2.Junior.forceArtifacts(project, cfg, rs)
