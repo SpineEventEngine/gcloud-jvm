@@ -31,6 +31,8 @@ import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.Value;
 import com.google.common.testing.NullPointerTester;
+import io.spine.core.BoundedContextName;
+import io.spine.core.BoundedContextNames;
 import io.spine.core.TenantId;
 import io.spine.server.storage.ColumnMapping;
 import io.spine.server.storage.datastore.config.DsColumnMapping;
@@ -75,6 +77,7 @@ final class DatastoreStorageFactoryBuilderTest {
                             datastore())
                 .setDefault(ColumnMapping.class, new DsColumnMapping())
                 .setDefault(RecordLayout.class, new FlatLayout<>(StgProject.class))
+                .setDefault(BoundedContextName.class, BoundedContextNames.newName("NullChecks"))
                 .testInstanceMethods(DatastoreStorageFactory.newBuilder(),
                                      NullPointerTester.Visibility.PACKAGE);
     }
