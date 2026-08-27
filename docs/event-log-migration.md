@@ -35,9 +35,20 @@ The entities under `spine.core.Event` carry no explicit context marker. The `typ
 property — holding the qualified Proto type name of the event — is the
 discriminator: each event type belongs to the domain of exactly one context.
 
+The copy has no ready-made tool: the Google-provided Dataflow templates for
+Datastore either delete entities or move them verbatim, and a managed
+[export and import][ds-export-import] restores every entity under its original
+kind. Write the copy yourself — as a script over the [Datastore client
+library][ds-client], or, for a large log, as a custom [Apache Beam
+pipeline][beam-datastore] run on Dataflow.
+
+> [!WARNING]
+> Take a managed [export][ds-export-import] of the `spine.core.Event` kind
+> before starting. The steps below only add entities, but an export is the
+> cheapest insurance against a mistake in a hand-written migration.
+
 For each context, copy the entities of its event types to the per-context kind,
-keeping the key names and all properties intact — e.g., with a [Dataflow
-template][dataflow-migration], or a script over the Datastore API:
+keeping the key names and all properties intact:
 
 1. Query `spine.core.Event` filtering the `type` property by the event types of
    the context.
@@ -74,4 +85,6 @@ namespaces hold the per-tenant data and are not affected by this change.
 
 [core-pr]: https://github.com/SpineEventEngine/core-jvm/pull/1673
 [ds-namespace]: https://cloud.google.com/datastore/docs/concepts/multitenancy
-[dataflow-migration]: https://cloud.google.com/dataflow/docs/guides/templates/provided/datastore-to-datastore-delete
+[ds-export-import]: https://cloud.google.com/datastore/docs/export-import-entities
+[ds-client]: https://cloud.google.com/datastore/docs/reference/libraries
+[beam-datastore]: https://beam.apache.org/documentation/io/built-in/google-cloud-datastore/
