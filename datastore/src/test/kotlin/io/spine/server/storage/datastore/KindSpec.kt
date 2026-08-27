@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test
  * Supplements the Java-based [KindTest] with the cases of composing kinds
  * for the grouped storages, including the event stores of Bounded Contexts.
  */
-@DisplayName("`Kind` should")
+@DisplayName("`Kind`, when composing a grouped kind, should")
 internal class KindSpec {
 
     @Test

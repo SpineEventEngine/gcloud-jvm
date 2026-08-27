@@ -64,7 +64,7 @@ internal class RecordLayoutsSpec {
         val group = StorageGroup.of(newName("Shipping"))
         val found = layouts.find<EventId, Event>(Event::class.java, group)
 
-        found.shouldBeInstanceOf<FlatLayout<EventId, Event>>()
+        found.shouldBeInstanceOf<FlatLayout<*, *>>()
         found.recordKind() shouldBe Kind.of(Event::class.java, group)
     }
 }
