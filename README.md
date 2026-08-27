@@ -51,6 +51,13 @@ For the details on setting up the server environment please refer to
 Distributed tracing is provided through OpenTelemetry. See
 [Enabling OpenTelemetry tracing on Google Cloud](docs/opentelemetry.md) for setup.
 
+### Migrating the event log
+
+The event store of each Bounded Context lands in its own Datastore kind, such as
+`Billing-Event`. Applications upgrading from the versions that kept a single
+`spine.core.Event` kind shared by all contexts should migrate the stored events;
+see [Migrating the event log](docs/event-log-migration.md).
+
 ### Configuring Datastore
 
 #### Datastore indexes
