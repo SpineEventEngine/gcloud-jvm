@@ -31,6 +31,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Message;
 import io.spine.annotation.Internal;
 import io.spine.base.EntityState;
+import io.spine.core.BoundedContextName;
 import io.spine.server.storage.StorageGroup;
 import io.spine.server.storage.datastore.Kind;
 import io.spine.type.TypeName;
@@ -224,6 +225,39 @@ public final class RecordLayouts
             checkNotNull(recordType);
             checkNotNull(layout);
             groupedValues.put(GroupedStorage.of(stateType, recordType), layout);
+            return this;
+        }
+
+        /**
+         * Adds a layout for the {@linkplain StorageGroup grouped} storage serving
+         * the Bounded Context with the given name and storing the records of
+         * the specified type — such as the event store of the context.
+         *
+         * <p>The group is named after the context, taking its name verbatim (see
+         * {@link StorageGroup#of(BoundedContextName)}).
+         *
+         * <p>Each next layout added for the same context and record type overwrites
+         * the previous one.
+         *
+         * @param context
+         *         the name of the Bounded Context served by the grouped storage
+         * @param recordType
+         *         the type of the records stored by the grouped storage
+         * @param layout
+         *         the layout to use
+         * @param <R>
+         *         the type of the stored records
+         * @return this instance of {@code Builder}
+         */
+        @CanIgnoreReturnValue
+        public <R extends Message> Builder add(BoundedContextName context,
+                                               Class<R> recordType,
+                                               RecordLayout<?, R> layout) {
+            checkNotNull(context);
+            checkNotNull(recordType);
+            checkNotNull(layout);
+            var group = StorageGroup.of(context);
+            groupedValues.put(new GroupedStorage(group, recordType), layout);
             return this;
         }
 
