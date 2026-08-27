@@ -36,6 +36,7 @@ import io.spine.dependency.lib.Grpc
 import io.spine.dependency.lib.Guava
 import io.spine.dependency.lib.Jackson
 import io.spine.dependency.lib.Kotlin
+import io.spine.dependency.lib.KotlinPoet
 import io.spine.dependency.lib.PerfMark
 import io.spine.dependency.lib.Slf4J
 import io.spine.dependency.local.Base
@@ -81,16 +82,17 @@ buildscript {
             exclude(group = "io.spine", module = "spine-flogger-api")
             exclude(group = "io.spine", module = "spine-logging-backend")
             resolutionStrategy {
-                val jackson = io.spine.dependency.lib.Jackson
                 val logging = io.spine.dependency.local.Logging
                 val cfg = this@all
                 val rs = this@resolutionStrategy
-                jackson.forceArtifacts(project, cfg, rs)
-                io.spine.dependency.lib.Jackson.DataType.forceArtifacts(project, cfg, rs)
+                io.spine.dependency.lib.JacksonV2.Core.forceArtifacts(project, cfg, rs)
+                io.spine.dependency.lib.JacksonV2.DataType.forceArtifacts(project, cfg, rs)
+                io.spine.dependency.lib.JacksonV2.Junior.forceArtifacts(project, cfg, rs)
+                io.spine.dependency.lib.JacksonV2.Module.forceArtifacts(project, cfg, rs)
                 io.spine.dependency.lib.Grpc.forceArtifacts(project, cfg, rs)
                 force(
-                    jackson.annotations,
-                    jackson.bom,
+                    io.spine.dependency.lib.Jackson.annotations,
+                    io.spine.dependency.lib.Caffeine.lib,
                     io.spine.dependency.lib.Grpc.bom,
                     io.spine.dependency.lib.Guava.lib,
                     io.spine.dependency.lib.Kotlin.bom,
@@ -105,7 +107,6 @@ buildscript {
                     io.spine.dependency.local.Compiler.pluginLib,
                     io.spine.dependency.local.Compiler.gradleApi,
                     io.spine.dependency.local.Compiler.params,
-                    io.spine.dependency.local.ToolBase.lib,
                     io.spine.dependency.local.CoreJvm.server,
                     logging.lib,
                     logging.libJvm,
@@ -120,7 +121,7 @@ buildscript {
         classpath(enforcedPlatform(io.spine.dependency.lib.Grpc.bom))
         classpath(enforcedPlatform(io.spine.dependency.kotlinx.Coroutines.bom))
         classpath(io.spine.dependency.local.Compiler.pluginLib)
-        classpath(io.spine.dependency.local.CoreJvmCompiler.pluginLib)
+        classpath(io.spine.dependency.local.CoreJvmCompiler.gradlePlugin)
     }
 }
 
@@ -541,6 +542,8 @@ fun Project.forceConfigurations() {
                 exclude("io.spine", "spine-validate")
                 force(
                     Kotlin.bom,
+                    KotlinPoet.lib,
+                    KotlinPoet.ksp,
                     Coroutines.bom,
                     JUnit.bom,
                     Jackson.annotations,
