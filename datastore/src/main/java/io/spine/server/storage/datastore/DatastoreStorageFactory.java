@@ -34,6 +34,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Message;
 import io.spine.annotation.Internal;
 import io.spine.base.EntityState;
+import io.spine.core.BoundedContextName;
 import io.spine.logging.WithLogging;
 import io.spine.server.BoundedContextBuilder;
 import io.spine.server.ContextSpec;
@@ -60,6 +61,7 @@ import io.spine.server.storage.datastore.tenant.NamespaceSupplier;
 import io.spine.server.storage.datastore.tenant.NamespaceConverterFactory;
 import io.spine.server.storage.datastore.tenant.PrefixedNamespaceConverterFactory;
 import io.spine.server.tenant.TenantIndex;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
@@ -118,7 +120,7 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
     private final NamespaceConverterFactory converterFactory;
 
     /**
-     * The settings of transactional behavior, per each stored record type.
+     * The settings of transactional behavior per each stored record type.
      */
     private final TxSettings txSettings;
 
@@ -380,10 +382,10 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
                 "`setNamespaceConverter` and `setConverterFactory` are mutually exclusive; " +
                         "only one of them may be called.";
 
-        private Datastore datastore;
-        private ColumnMapping<Value<?>> columnMapping;
-        private NamespaceConverter namespaceConverter;
-        private NamespaceConverterFactory converterFactory;
+        private @MonotonicNonNull Datastore datastore = null;
+        private @MonotonicNonNull ColumnMapping<Value<?>> columnMapping = null;
+        private @Nullable NamespaceConverter namespaceConverter = null;
+        private @Nullable NamespaceConverterFactory converterFactory = null;
         private final TxSettings.Builder txSettings = TxSettings.newBuilder();
         private final RecordLayouts.Builder layouts = RecordLayouts.newBuilder();
         private final CustomStorages.Builder customStorages = CustomStorages.newBuilder();
@@ -397,7 +399,7 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
          *
          * <p>If the provided {@code Datastore} is configured with a namespace:
          * <ul>
-         *     <li>resulting single tenant storages will use the provided namespace;
+         *     <li>resulting single-tenant storages will use the provided namespace;
          *     <li>resulting multitenant storages will concatenate the provided namespace with
          *         the tenant identifier. See {@link #setNamespaceConverter} for more configuration.
          * </ul>
@@ -608,7 +610,7 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
          * under the kind {@linkplain Kind#of(Class, StorageGroup) composed of the group
          * name and the record type}.
          *
-         * <p>It is a responsibility of callers to select a kind that does not collide
+         * <p>It is the responsibility of callers to select a kind that does not collide
          * with the kinds of other storages, including the generated ones.
          *
          * @param stateType
@@ -634,6 +636,60 @@ public class DatastoreStorageFactory implements StorageFactory, WithLogging {
             checkNotNull(recordType);
             checkNotNull(layout);
             layouts.add(stateType, recordType, layout);
+            return this;
+        }
+
+        /**
+         * Specifies the layout of Datastore Entities to use for the
+         * {@linkplain StorageGroup grouped} storage serving the Bounded Context
+         * with the given name and storing the records of the specified type —
+         * such as the event store of the context. For instance:
+         *
+         * <pre>
+         * // Storing the event log of the `Billing` context under a custom kind,
+         * // instead of the derived `Billing-Event`:
+         * builder.organizeRecords(BoundedContextNames.newName("Billing"), Event.class,
+         *                         new FlatLayout&lt;&gt;(Kind.of("BillingJournal")));
+         * </pre>
+         *
+         * <p>The grouped storage is addressed by the storage group — named by
+         * the framework after the context, taking its name verbatim. To address
+         * the storage of a System context, spell its name directly, e.g.
+         * {@code BoundedContextNames.newName("Billing_System")}.
+         *
+         * <p>The layout previously set for the same grouped storage, if any,
+         * is replaced with this call. The single-type
+         * {@linkplain #organizeRecords(Class, RecordLayout) record layouts} never
+         * apply to grouped storages.
+         *
+         * <p>In case no custom layout is defined, the grouped storage takes a flat
+         * layout under the kind {@linkplain Kind#of(Class, StorageGroup) composed of
+         * the group name and the record type}, e.g. {@code Billing-Event}.
+         *
+         * <p>It is the responsibility of callers to select a kind that does not collide
+         * with the kinds of other storages, including the generated ones.
+         *
+         * @param context
+         *         the name of the Bounded Context served by the grouped storage
+         * @param recordType
+         *         the type of the records stored by the grouped storage
+         * @param layout
+         *         the layout to use
+         * @param <I>
+         *         the type of record identifiers
+         * @param <R>
+         *         the type of the stored records
+         * @return this instance of {@code Builder}
+         */
+        @CanIgnoreReturnValue
+        public <I, R extends Message>
+        Builder organizeRecords(BoundedContextName context,
+                                Class<R> recordType,
+                                RecordLayout<I, R> layout) {
+            checkNotNull(context);
+            checkNotNull(recordType);
+            checkNotNull(layout);
+            layouts.add(context, recordType, layout);
             return this;
         }
 

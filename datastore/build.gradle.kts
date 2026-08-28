@@ -45,7 +45,21 @@ dependencies {
     api(Logging.lib)
 
     testImplementation(project(":testlib"))
-    testImplementation(CoreJvm.server)
+
+    // The test fixtures of `spine-server` provide the shared contract suites,
+    // such as `DefaultEventStoreTest` extended by `DatastoreDefaultEventStoreTest`.
+    // The main `spine-server` classes reach the test classpath transitively:
+    // the published fixtures variant depends on its own main component.
+    //
+    // The capability is requested explicitly because `spine-server` publishes its
+    // test fixtures under the `io.spine:server-test-fixtures` capability (derived from
+    // the `server` module name), which does not match the name the `testFixtures(...)`
+    // helper would expect for the `spine-`-prefixed artifact.
+    testImplementation(CoreJvm.server) {
+        capabilities {
+            requireCapability("io.spine:server-test-fixtures")
+        }
+    }
 }
 
 tasks {
