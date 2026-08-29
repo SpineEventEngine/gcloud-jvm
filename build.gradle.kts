@@ -554,6 +554,10 @@ fun Project.forceConfigurations() {
                     }
                 }
                 exclude("io.spine", "spine-validate")
+                JacksonV2.Core.forceArtifacts(project, this@all, this@resolutionStrategy)
+                JacksonV2.DataType.forceArtifacts(project, this@all, this@resolutionStrategy)
+                JacksonV2.DataFormat.forceArtifacts(project, this@all, this@resolutionStrategy)
+                JacksonV2.Module.forceArtifacts(project, this@all, this@resolutionStrategy)
                 force(
                     Kotlin.bom,
                     KotlinPoet.lib,
