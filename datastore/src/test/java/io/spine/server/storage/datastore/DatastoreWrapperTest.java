@@ -169,7 +169,11 @@ final class DatastoreWrapperTest {
 
         @AfterEach
         void tearDown() {
-            wrapper.dropAllTables();
+            // `@AfterEach` still runs when the setup aborts on the assumption
+            // above, leaving the wrapper unassigned.
+            if (wrapper != null) {
+                wrapper.dropAllTables();
+            }
         }
 
         @SlowTest
