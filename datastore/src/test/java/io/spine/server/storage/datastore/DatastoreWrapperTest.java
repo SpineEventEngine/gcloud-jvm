@@ -159,6 +159,11 @@ final class DatastoreWrapperTest {
 
         @BeforeEach
         void setUp() {
+            // The remote suite needs the `spine-dev.json` credential, which is
+            // present only where it is provisioned. The test body already
+            // assumes this, but the credential is loaded here first, so the
+            // assumption must come before it.
+            assumeTrue(runsOnCi());
             wrapper = wrap(remoteDatastore(), true);
         }
 
