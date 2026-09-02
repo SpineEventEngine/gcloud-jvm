@@ -91,8 +91,7 @@ class TestDatastoresTest extends UtilityClassTest<TestDatastores> {
         @BeforeEach
         void requireCredential() {
             assumeTrue(
-                    TestDatastoresTest.class.getClassLoader()
-                                            .getResource(SPINE_DEV_JSON) != null,
+                    localResource(SPINE_DEV_JSON).exists(),
                     "The `" + SPINE_DEV_JSON + "` credential is not available."
             );
         }

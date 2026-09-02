@@ -160,9 +160,8 @@ final class DatastoreWrapperTest {
         @BeforeEach
         void setUp() {
             // The remote suite needs the `spine-dev.json` credential, which is
-            // present only where it is provisioned. The test body already
-            // assumes this, but the credential is loaded here first, so the
-            // assumption must come before it.
+            // present only where it is provisioned. The assumption must come
+            // before the credential is loaded on the next line.
             assumeTrue(runsOnCi());
             wrapper = wrap(remoteDatastore(), true);
         }
@@ -180,8 +179,6 @@ final class DatastoreWrapperTest {
         @Test
         @DisplayName("read and write entities in the remote datastore")
         void testBulkRead() {
-            assumeTrue(runsOnCi());
-
             var entityCount = 5;
             var entities = newTestEntities(entityCount, wrapper);
             var expectedEntities = entities.values();
