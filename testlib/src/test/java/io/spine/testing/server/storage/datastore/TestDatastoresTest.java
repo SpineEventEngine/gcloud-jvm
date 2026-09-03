@@ -29,6 +29,7 @@ package io.spine.testing.server.storage.datastore;
 import io.spine.io.Resource;
 import io.spine.server.storage.datastore.ProjectId;
 import io.spine.testing.UtilityClassTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import static com.google.common.truth.Truth.assertThat;
 import static io.spine.testing.server.storage.datastore.TestDatastores.DEFAULT_LOCAL_PROJECT_ID;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @DisplayName("`TestDatastores` utility should")
 @EmulatorTest
@@ -77,6 +79,22 @@ class TestDatastoresTest extends UtilityClassTest<TestDatastores> {
 
         private static final String SPINE_DEV_JSON = "spine-dev.json";
         private static final String PROJECT_ID = "spine-dev";
+
+        /**
+         * Skips these tests when the service-account credential is absent.
+         *
+         * <p>The credential is copied into test resources only on machines and CI jobs
+         * that have it, and the root build script treats its absence as a warning rather
+         * than a failure, expecting the remote suites to skip. This assumption restores
+         * that contract.
+         */
+        @BeforeEach
+        void requireCredential() {
+            assumeTrue(
+                    localResource(SPINE_DEV_JSON).exists(),
+                    "The `" + SPINE_DEV_JSON + "` credential is not available."
+            );
+        }
 
         @Test
         @DisplayName("the service account resource at path")

@@ -35,6 +35,10 @@ import io.spine.dependency.lib.GoogleApis
 import io.spine.dependency.lib.Grpc
 import io.spine.dependency.lib.Guava
 import io.spine.dependency.lib.Jackson
+import io.spine.dependency.kotlinx.AtomicFu
+import io.spine.dependency.lib.Caffeine
+import io.spine.dependency.lib.JacksonV2
+import io.spine.dependency.lib.Protobuf
 import io.spine.dependency.lib.Kotlin
 import io.spine.dependency.lib.KotlinPoet
 import io.spine.dependency.lib.PerfMark
@@ -94,7 +98,15 @@ buildscript {
                 io.spine.dependency.lib.Grpc.forceArtifacts(project, cfg, rs)
                 force(
                     io.spine.dependency.lib.Jackson.annotations,
+                    io.spine.dependency.lib.Jackson.bom,
+                    io.spine.dependency.lib.JacksonV2.bom,
                     io.spine.dependency.lib.Caffeine.lib,
+                    // Floor artifacts request the pre-refresh versions;
+                    // the Protobuf runtime must never be older than the
+                    // refreshed gencode.
+                    io.spine.dependency.kotlinx.Coroutines.bom,
+                    io.spine.dependency.kotlinx.AtomicFu.lib,
+                    io.spine.dependency.lib.Protobuf.javaLib,
                     io.spine.dependency.lib.Grpc.bom,
                     io.spine.dependency.lib.Guava.lib,
                     io.spine.dependency.lib.Kotlin.bom,
@@ -542,14 +554,22 @@ fun Project.forceConfigurations() {
                     }
                 }
                 exclude("io.spine", "spine-validate")
+                JacksonV2.Core.forceArtifacts(project, this@all, this@resolutionStrategy)
+                JacksonV2.DataType.forceArtifacts(project, this@all, this@resolutionStrategy)
+                JacksonV2.DataFormat.forceArtifacts(project, this@all, this@resolutionStrategy)
+                JacksonV2.Module.forceArtifacts(project, this@all, this@resolutionStrategy)
                 force(
                     Kotlin.bom,
                     KotlinPoet.lib,
                     KotlinPoet.ksp,
                     Coroutines.bom,
+                    AtomicFu.lib,
+                    Protobuf.javaLib,
+                    Caffeine.lib,
+                    Jackson.bom,
+                    JacksonV2.bom,
                     JUnit.bom,
                     Jackson.annotations,
-                    Jackson.bom,
                     Grpc.ProtocPlugin.artifact,
                     Grpc.bom,
                     Guava.lib,
@@ -572,7 +592,6 @@ fun Project.forceConfigurations() {
                     BaseTypes.lib,
                     Change.lib,
                     TestLib.lib,
-                    ToolBase.lib,
                     ToolBase.pluginBase,
                     CoreJvm.server,
                     Compiler.api,
