@@ -2,7 +2,7 @@
 slug: drop-field-mask-support
 branch: drop-support-of-field-mask
 owner: claude
-status: in-review
+status: blocked
 started: 2026-10-02
 ---
 
@@ -65,6 +65,23 @@ so `DsRecordStorageTest` passes the `DelegatingRecordStorageTest` fixture of cor
 - [x] Reviews: `dependency-audit`, `spine-code-review`, `kotlin-engineer`, `review-docs`;
       their findings are applied.
 - [x] Re-verify after the review fixes.
+- [ ] Once core-jvm PR #1679 is merged and its version is published to the Artifact
+      Registry, adapt to the merged state and open the PR (see "Pending").
+
+## Pending: core-jvm PR #1679
+
+The PR (https://github.com/SpineEventEngine/core-jvm/pull/1679) is merged not earlier than
+2026-10-03 10:00. Since `ed302323ceb` it gained commits that bump Base to `.450`, where
+`withMask(..)` stores nothing; the fixture dropped `allIgnoringMask` and the mask of
+the column query. After the merge:
+
+1. Align `CoreJvm`, `Base`, and `CoreJvmCompiler` with the merged core-jvm.
+2. Delete `IgnoredFieldMaskSpec`: no mask reaches a storage anymore, so its premise
+   check fails.
+3. Verify with `./gradlew build dokkaGenerate --refresh-dependencies`: Maven Local holds
+   a stale `.560` built from `ed302323ceb`. The Artifact Registry precedes `mavenLocal()`,
+   but the cached lookup misses must be refreshed.
+4. Commit, run `pre-pr`, push, and open the PR against `master`.
 
 ## Verification prerequisites
 
@@ -75,13 +92,7 @@ so `DsRecordStorageTest` passes the `DelegatingRecordStorageTest` fixture of cor
 
 ## Follow-ups (out of scope)
 
-- `base-libraries` (commit `c444eb217f`, `.450`, branch `drop-field-mask-support`) turns
-  `withMask(..)` into a deprecated no-op. Once `Base` is bumped past it, no mask reaches
-  a storage, so `IgnoredFieldMaskSpec` checks nothing: its premise check fails with
-  a request to delete the spec. Delete it then. The masked-query tests of the core-jvm
-  fixture become vacuous at the same point.
-- The build regenerated `docs/dependencies/{dependencies.md,pom.xml}`; per `bump-version`,
-  they go into a separate "Update dependency reports" commit.
+- None.
 
 ## Log
 
@@ -103,3 +114,8 @@ so `DsRecordStorageTest` passes the `DelegatingRecordStorageTest` fixture of cor
   `UtilityClassTest`, `IgnoredFieldMaskSpec` asserts its premises, Javadoc wording fixed.
 - 2026-10-02 18:49 — re-verified: `./gradlew build dokkaGenerate` green; `datastore` 335
   tests, 0 failures. Nothing committed; ready for review.
+- 2026-10-02 20:10 — committed the changes as seven commits, from "Update `config`"
+  to "Update dependency reports"; nothing pushed.
+- 2026-10-02 20:15 — blocked on core-jvm PR #1679. A session cron job (`421f7037`) checks
+  it every 30 minutes from 2026-10-03 10:07, then follows "Pending". The job is gone if
+  the session ends.
