@@ -1,0 +1,4 @@
+$dokka.format:javadoc-v1
+$dokka.linkExtension:html
+$dokka.location:io.spine.pubsub/PubsubPushRequest.Builder///PointingToDeclaration/io/spine/pubsub/PubsubPushRequest.Builder.html
+io.spine.pubsub
