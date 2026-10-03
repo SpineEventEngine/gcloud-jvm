@@ -50,6 +50,9 @@ so `DsRecordStorageTest` passes the `DelegatingRecordStorageTest` fixture of cor
   - `IgnoredFieldMaskSpec` covered masked queries for each lookup strategy against
     Base `.445`. Its premise check (the query carries the mask) failed by design once
     Base `.450` made `withMask(..)` store nothing, so the spec is removed.
+  - `DsLookupByQueriesSpec` (emulator) — reading by a query that runs as several Datastore
+    queries: joining the results, removing duplicates, sorting, and limiting after
+    sorting. The removed spec was the only test of this path; `master` had none.
 - [x] Pull the latest `config` (requested by the user mid-task): `config` → `94a9e08b`.
 - [x] Select the "CodeMatters Open-Source" copyright profile in IDEA settings and use it
       for all updated files (requested by the user mid-task). The `update-copyright.sh`
@@ -103,3 +106,6 @@ so `DsRecordStorageTest` passes the `DelegatingRecordStorageTest` fixture of cor
   ("The query carries no field mask"), as designed; removed.
 - 2026-10-03 18:07 — `./gradlew build dokkaGenerate --refresh-dependencies` green against the
   published `.560`: `datastore` 331 tests, 0 failures, 18 skipped; all 24 fixture cases pass.
+- 2026-10-03 18:49 — opened PR #208. Added `DsLookupByQueriesSpec` (4 cases) for the
+  multi-query lookup. A mutation check confirmed its value: without `distinct()` in
+  `readAndJoin`, or without the in-memory sort in `SortAndLimit`, the matching tests fail.
