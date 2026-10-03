@@ -2,7 +2,7 @@
 slug: drop-field-mask-support
 branch: drop-support-of-field-mask
 owner: claude
-status: blocked
+status: in-review
 started: 2026-10-02
 ---
 
@@ -14,16 +14,15 @@ so `DsRecordStorageTest` passes the `DelegatingRecordStorageTest` fixture of cor
 
 ## Context
 
-- core-jvm `drop-support-of-field-mask` (commit `ed302323ceb`, version `.560`) dropped
-  `FieldMask` support on the read path: the API elements carrying masks stay, but are
-  deprecated no-ops. Its plan (`core-jvm/.agents/tasks/drop-field-mask-support.md`) lists
-  this repo as a follow-up: "drop its own `record/FieldMaskApplier` masking".
+- core-jvm PR #1679 (merged as `d6a73060f96`, version `.560`) dropped `FieldMask` support
+  on the read path: the API elements carrying masks stay, but are deprecated no-ops.
+  Its plan (`core-jvm/.agents/tasks/drop-field-mask-support.md`) lists this repo as
+  a follow-up: "drop its own `record/FieldMaskApplier` masking".
 - The masks used to be applied in `ToRecords` (for both `ConvertAsIs` and `SortAndLimit`)
   and in `DsLookupByIds.toMaskedRecord(..)`.
-- The fixture flipped four tests to expect full records. Two of them (`allIgnoringMask`,
-  `manyRecordsBySeveralColumnsWithLimitIgnoringMask`) run `readAll(RecordQuery)` built
-  with `withMask(..)`. Both yield a single Datastore query, so they reach only
-  `DsLookupByQueries` → `ConvertAsIs` → `ToRecords`. The other two call the deprecated
+- The PR also bumped Base to `.450`, where `withMask(..)` stores nothing, so no mask
+  reaches a storage through a `RecordQuery` anymore. The fixture dropped its masked
+  `RecordQuery` tests accordingly. The remaining mask tests call the deprecated
   `read(id, mask)` and `readAll(ids, mask)`; `DsRecordStorage` does not override them,
   so core's mask-free delegation covers them.
 - `record.FieldMaskApplier` is public in a non-`@Internal` package with published Javadoc,
@@ -34,8 +33,8 @@ so `DsRecordStorageTest` passes the `DelegatingRecordStorageTest` fixture of cor
 
 - [x] Bump `versionToPublish` `.231` → `.240`: breaking-change rounding, mirroring
       core-jvm's `.552` → `.560` for the same semantic change.
-- [x] Adopt core-jvm `.560`: `CoreJvm` → `.560`. Align the two pins core-jvm's branch
-      moved, since this build force-pins them: `Base` → `.445`, `CoreJvmCompiler` → `.094`.
+- [x] Adopt core-jvm `.560`: `CoreJvm` → `.560`. Align the pins of the merged core-jvm,
+      since this build force-pins them: `Base` → `.450`, `CoreJvmCompiler` → `.094`.
 - [x] Remove masking from the query pipeline:
   - `ToRecords`, `ConvertAsIs`, `SortAndLimit` — drop the `FieldMask` constructor
     parameter and the masker;
@@ -46,13 +45,11 @@ so `DsRecordStorageTest` passes the `DelegatingRecordStorageTest` fixture of cor
       plus the `@deprecated` tag; `recordMasker` keeps `checkNotNull` and returns
       `Function.identity()`.
 - [x] Tests (Kotlin, Kotest, `internal` `…Spec`):
-  - `IgnoredFieldMaskSpec` (emulator) — a `RecordQuery` with a mask returns full records
-    via a lookup by IDs (`DsLookupByIds`) and via a lookup by one (`ConvertAsIs`) or
-    several (`SortAndLimit`) Datastore queries. The fixture reaches neither the by-IDs
-    lookup nor `SortAndLimit` with a mask. The spec asserts its premises: that the query
-    carries the mask, and that the `OR` query splits into two Datastore queries.
   - `FieldMaskApplierSpec` (`UtilityClassTest`) — the deprecated masker returns plain
     messages and `EntityRecord`s unchanged, and still rejects a `null` mask.
+  - `IgnoredFieldMaskSpec` covered masked queries for each lookup strategy against
+    Base `.445`. Its premise check (the query carries the mask) failed by design once
+    Base `.450` made `withMask(..)` store nothing, so the spec is removed.
 - [x] Pull the latest `config` (requested by the user mid-task): `config` → `94a9e08b`.
 - [x] Select the "CodeMatters Open-Source" copyright profile in IDEA settings and use it
       for all updated files (requested by the user mid-task). The `update-copyright.sh`
@@ -64,35 +61,16 @@ so `DsRecordStorageTest` passes the `DelegatingRecordStorageTest` fixture of cor
       `recordMasker`, or `mask()` use in `datastore/src/main` outside the deprecated class.
 - [x] Reviews: `dependency-audit`, `spine-code-review`, `kotlin-engineer`, `review-docs`;
       their findings are applied.
-- [x] Re-verify after the review fixes.
-- [ ] Once core-jvm PR #1679 is merged and its version is published to the Artifact
-      Registry, adapt to the merged state and open the PR (see "Pending").
+- [x] Adapt to the merged core-jvm PR #1679 once its version is published, re-verify
+      with `--refresh-dependencies`, and open the PR.
 
-## Pending: core-jvm PR #1679
+## Verification
 
-The PR (https://github.com/SpineEventEngine/core-jvm/pull/1679) is merged not earlier than
-2026-10-03 10:00. Since `ed302323ceb` it gained commits that bump Base to `.450`, where
-`withMask(..)` stores nothing; the fixture dropped `allIgnoringMask` and the mask of
-the column query. After the merge:
-
-1. Align `CoreJvm`, `Base`, and `CoreJvmCompiler` with the merged core-jvm.
-2. Delete `IgnoredFieldMaskSpec`: no mask reaches a storage anymore, so its premise
-   check fails.
-3. Verify with `./gradlew build dokkaGenerate --refresh-dependencies`: Maven Local holds
-   a stale `.560` built from `ed302323ceb`. The Artifact Registry precedes `mavenLocal()`,
-   but the cached lookup misses must be refreshed.
-4. Commit, run `pre-pr`, push, and open the PR against `master`.
-
-## Verification prerequisites
-
-- core-jvm `.560` is not published remotely yet; it was published to Maven Local from
-  a throwaway clone of `ed302323ceb` in the session scratchpad
-  (`publishToMavenLocal -x test`), leaving the active `core-jvm` checkout untouched.
-- Docker Desktop must be running for the emulator-backed `:datastore` tests.
-
-## Follow-ups (out of scope)
-
-- None.
+- `./gradlew build dokkaGenerate --refresh-dependencies` with Corretto 17 and Docker
+  Desktop running (the `:datastore` tests use the Datastore Emulator).
+- Maven Local holds a stale `.560` built from `ed302323ceb` before the PR merged.
+  The Artifact Registry precedes `mavenLocal()`, and `--refresh-dependencies` drops
+  the cached lookup misses, so the build resolves the published `.560`.
 
 ## Log
 
@@ -117,5 +95,11 @@ the column query. After the merge:
 - 2026-10-02 20:10 — committed the changes as seven commits, from "Update `config`"
   to "Update dependency reports"; nothing pushed.
 - 2026-10-02 20:15 — blocked on core-jvm PR #1679. A session cron job (`421f7037`) checks
-  it every 30 minutes from 2026-10-03 10:07, then follows "Pending". The job is gone if
-  the session ends.
+  it every 30 minutes from 2026-10-03 10:07.
+- 2026-10-03 13:10 — core-jvm PR #1679 merged at 13:03 as `d6a73060f96`: version `.560`,
+  Base `.450`, CoreJvm Compiler `.094`.
+- 2026-10-03 13:41 — `.560` published to the Artifact Registry; the cron job cancelled.
+  Base → `.450`. `IgnoredFieldMaskSpec` failed its premise check in all three cases
+  ("The query carries no field mask"), as designed; removed.
+- 2026-10-03 18:07 — `./gradlew build dokkaGenerate --refresh-dependencies` green against the
+  published `.560`: `datastore` 331 tests, 0 failures, 18 skipped; all 24 fixture cases pass.
