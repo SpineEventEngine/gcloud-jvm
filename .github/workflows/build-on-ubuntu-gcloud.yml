@@ -20,6 +20,9 @@ jobs:
   build:
     name: Build on Ubuntu
     runs-on: ubuntu-latest
+    # A green build takes about 10 minutes. The cap stops a hung Datastore Emulator
+    # from holding the runner for hours while every remaining test waits out its deadline.
+    timeout-minutes: 30
     concurrency:  # Avoid canceling in-progress runs for the same branch.
       group: ubuntu-ci-${{ github.ref }}
       cancel-in-progress: false
