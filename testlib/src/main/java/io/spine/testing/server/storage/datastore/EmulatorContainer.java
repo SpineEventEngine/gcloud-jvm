@@ -37,10 +37,10 @@ final class EmulatorContainer extends DatastoreEmulatorContainer {
     /**
      * Options of the JVM running the emulator inside the container.
      *
-     * <p>By default, a JVM keeps running after an {@code OutOfMemoryError}, which may leave
-     * the emulator accepting connections without answering them. Every call to it then waits
-     * until its deadline. Exiting on such an error stops the container instead, so that
-     * the calls fail fast and the emulator output tells why.
+     * <p>By default, a JVM keeps running after an {@code OutOfMemoryError}. The emulator may
+     * then still answer its health check while its data requests hang, and every such call
+     * waits until its deadline. Exiting on the error stops the container instead, so that
+     * the calls fail fast and the emulator output shows why.
      */
     private static final String JVM_OPTIONS = "-XX:+ExitOnOutOfMemoryError";
 
